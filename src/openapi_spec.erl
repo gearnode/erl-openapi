@@ -24,7 +24,7 @@ read(Data) ->
     {ok, Value} ->
       read_value(Value);
     {error, Error} ->
-      {error, {invalid_data, Error}}
+      {error, {invalid_json_data, Error}}
   end.
 
 -spec read_value(json:value()) ->
