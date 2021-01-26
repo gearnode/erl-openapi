@@ -1,0 +1,11 @@
+{application, openapi,
+ [{description, "A simple library application."},
+  {vsn, "git"},
+  {registered, []},
+  {mod, {openapi_app, []}},
+  {applications,
+   [kernel,
+    stdlib,
+    et]},
+  {env, []},
+  {modules, []}]}.
