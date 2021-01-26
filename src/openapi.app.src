@@ -1,5 +1,5 @@
 {application, openapi,
- [{description, "A simple library application."},
+ [{description, "An implementation of OpenAPI v2."},
   {vsn, "git"},
   {registered, []},
   {mod, {openapi_app, []}},
