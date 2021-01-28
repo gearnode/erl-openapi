@@ -1,6 +1,11 @@
 -module(openapi_jsv).
 
--export([catalog/0]).
+-export([type_map/0, catalog/0]).
+
+-spec type_map() -> jsv:type_map().
+type_map() ->
+  maps:merge(jsv:default_type_map(),
+             #{reference => openapi_jsv_reference}).
 
 -spec catalog() -> jsv:catalog().
 catalog() ->
@@ -11,12 +16,11 @@ catalog() ->
     path => path_definition(),
     operation => operation_definition(),
     schema => schema_definition(),
-    parameters => parameters_definition(),
+    schema_type => schema_type_definition(),
+    xml => xml_definition(),
     parameter => parameter_definition(),
-    responses => responses_definition(),
+    items => items_definition(),
     response => response_definition(),
-    examples => examples_definition(),
-    headers => headers_definition(),
     header => header_definition(),
     security => security_definition(),
     security_scheme => security_scheme_definition(),
@@ -37,8 +41,8 @@ specification_definition() ->
          produces => {array, #{element => string}},
          paths => {object, #{value => {ref, path}}},
          definitions => {object, #{value => {ref, schema}}},
-         parameters => {ref, parameters},
-         responses => {ref, responses},
+         parameters => {object, #{value => {ref, parameter}}},
+         responses => {object, #{value => {ref, response}}},
          securityDefinitions => {ref, security},
          security => {array, #{element => {ref, security_requirement}}},
          tags => {array, #{element => {ref, tag}}},
@@ -78,7 +82,7 @@ license_definition() ->
 path_definition() ->
   {object,
    #{members =>
-       #{'$ref' => uri,
+       #{'$ref' => reference,
          get => {ref, operation},
          put => {ref, operation},
          post => {ref, operation},
@@ -86,9 +90,7 @@ path_definition() ->
          options => {ref, operation},
          head => {ref, operation},
          patch => {ref, operation},
-         parameters => {array, #{element => {ref, parameter}}}},
-     required =>
-       []}}.
+         parameters => {array, #{element => {ref, parameter}}}}}}.
 
 -spec operation_definition() -> jsv:definition().
 operation_definition() ->
@@ -102,7 +104,7 @@ operation_definition() ->
          consumes => {array, #{element => string}},
          produces => {array, #{element => string}},
          parameters => {array, #{element => {ref, parameter}}},
-         responses => {ref, responses},
+         responses => {object, #{value => {ref, response}}},
          schemes => {array, #{element => string}},
          deprecated => boolean,
          security => {array, #{element => {ref, security_requirement}}}},
@@ -111,85 +113,153 @@ operation_definition() ->
 
 -spec schema_definition() -> jsv:definition().
 schema_definition() ->
-  %% TODO add missing member definitions
   {object,
    #{members =>
-       #{'$ref' => uri,
+       #{'$ref' => reference,
          discriminator => string,
          readOnly => boolean,
-         format => string,
+         xml => {ref, xml},
          externalDocs => {ref, external_documentation},
-         example => any},
+         example => any,
+         type => {one_of, [{ref, schema_type},
+                           {array, #{element => {ref, schema_type}}}]},
+         format => string,
+         title => string,
+         description => string,
+         default => any,
+         maximum => number,
+         exclusiveMaximum => number,
+         minimum => number,
+         exclusiveMinimum => number,
+         maxLength => integer,
+         minLength => integer,
+         pattern => string,
+         maxItems => integer,
+         minItems => integer,
+         uniqueItems => boolean,
+         enum => array,
+         multipleOf => number,
+         required => {array, #{element => string}},
+         items => {one_of, [{ref, schema},
+                            {array, #{element => {ref, schema}}}]},
+         allOf => {array, #{element => {ref, schema},
+                            min_length => 1}},
+         properties => {object, #{value => {ref, schema}}},
+         additionalProperties => {one_of, [boolean, {ref, schema}]}},
      required =>
        []}}.
 
--spec parameters_definition() -> jsv:definition().
-parameters_definition() ->
+-spec schema_type_definition() -> jsv:definition().
+schema_type_definition() ->
+  {string,
+   #{values =>
+       [null, string, number, integer, boolean, array, object]}}.
+
+-spec xml_definition() -> jsv:definition().
+xml_definition() ->
   {object,
-   #{value => {ref, parameter}}}.
+   #{members =>
+       #{name => string,
+         namespace => string,
+         prefix => string,
+         attribute => boolean,
+         wrapped => boolean}}}.
 
 -spec parameter_definition() -> jsv:definition().
 parameter_definition() ->
-  %% TODO add missing member definitions
   {object,
    #{members =>
-       #{'$ref' => uri,
+       #{'$ref' => reference,
          name => string,
          in => {string, #{values => [query, header, path, formData, body]}},
          description => string,
          required => boolean,
+         schema => {ref, schema},
          type => {string,
-                  #{values => [string, number, integer, boolean, array, file]}},
+                  #{values => [string, number, integer, boolean, array,
+                               file]}},
          format => string,
          allowEmptyValue => boolean,
+         items => {ref, items},
          collectionFormat => {string,
                               #{values => [csv, ssv, tsv, pipes, multi]}},
          default => any,
-         uniqueItems => boolean},
+         maximum => number,
+         exclusiveMaximum => number,
+         minimum => number,
+         exclusiveMinimum => number,
+         maxLength => integer,
+         minLength => integer,
+         pattern => string,
+         maxItems => integer,
+         minItems => integer,
+         uniqueItems => boolean,
+         enum => array,
+         multipleOf => number},
      required =>
        [name, in]}}.
 
--spec responses_definition() -> jsv:definition().
-responses_definition() ->
+-spec items_definition() -> jsv:definition().
+items_definition() ->
   {object,
    #{members =>
-       #{'$ref' => uri,
-         default => {ref, response}},
-     value =>
-       {ref, response}}}.
+       #{type => {string,
+                  #{values => [string, number, integer, boolean, array]}},
+         format => string,
+         items => {ref, items},
+         collectionFormat => {string, #{values => [csv, ssv, tsv, pipes]}},
+         default => any,
+         maximum => number,
+         exclusiveMaximum => number,
+         minimum => number,
+         exclusiveMinimum => number,
+         maxLength => integer,
+         minLength => integer,
+         pattern => string,
+         maxItems => integer,
+         minItems => integer,
+         uniqueItems => boolean,
+         enum => array,
+         multipleOf => number},
+     required =>
+       [type]}}.
 
 -spec response_definition() -> jsv:definition().
 response_definition() ->
   {object,
    #{members =>
-       #{'$ref' => uri,
+       #{'$ref' => reference,
          description => string,
          schema => {ref, schema},
-         headers => {ref, headers},
-         examples => {ref, examples}},
+         headers => {object, #{value => {ref, header}}},
+         examples => object},
      required =>
        [description]}}.
 
--spec examples_definition() -> jsv:definition().
-examples_definition() ->
-  {object,
-   #{value => any}}.
-
--spec headers_definition() -> jsv:definition().
-headers_definition() ->
-  {object,
-   #{value => {ref, header}}}.
-
 -spec header_definition() -> jsv:definition().
 header_definition() ->
-  %% TODO add missing member definitions
   {object,
    #{members =>
        #{description => string,
          type => {string, #{values => [string, number, integer, boolean,
                                        array]}},
          format => string,
-         default => string},
+         items => {ref, items},
+         collectionFormat => {string,
+                              #{values => [csv, ssv, tsv, pipes]}},
+         default => any,
+         maximum => number,
+         exclusiveMaximum => number,
+         minimum => number,
+         exclusiveMinimum => number,
+         maxLength => integer,
+         minLength => integer,
+         pattern => string,
+         maxItems => integer,
+         minItems => integer,
+         uniqueItems => boolean,
+         enum => array,
+         multipleOf => number},
      required =>
        [type]}}.
 
@@ -200,17 +270,14 @@ security_definition() ->
 
 -spec security_scheme_definition() -> jsv:definition().
 security_scheme_definition() ->
-  %% OpenAPI mandates that various fields (name, in, flow, authorizationUrl,
-  %% tokenUrl, scopes) are required. In practice, lots of specifications do
-  %% not include them (e.g. the Kubernetes API specification).
   {object,
    #{members =>
        #{type => string,
          description => string,
          name => string,
          in => {string, #{values => [query, header]}},
-         flow => {string, #{values => [implicit, password, application,
-                                       accessCode]}},
+         flow => {string,
+                  #{values => [implicit, password, application, accessCode]}},
          authorizationUrl => uri,
          tokenUrl => uri,
          scopes => {object, #{value => string}}},

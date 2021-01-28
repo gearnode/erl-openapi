@@ -6,7 +6,8 @@
 
 start(_StartType, _Args) ->
   jsv:register_catalog(openapi, openapi_jsv:catalog()),
-  case jsv:verify_catalog(openapi) of
+  Options = #{type_map => openapi_jsv:type_map()},
+  case jsv:verify_catalog(openapi, Options) of
     ok ->
       openapi_sup:start_link();
     {error, Reason} ->
