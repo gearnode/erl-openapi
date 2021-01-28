@@ -64,8 +64,8 @@ resolve_refs(Value, Spec, Refs) when is_list(Value) ->
   lists:map(fun (Element) -> resolve_refs(Element, Spec, Refs) end, Value);
 resolve_refs(Value = #{<<"$ref">> := Ref}, Spec, Refs) when is_binary(Ref) ->
   Value2 = maps:without([<<"$ref">>], Value),
-  maps:merge(resolve_ref(Ref, Spec, Refs),
-             resolve_refs(Value2, Spec, Refs));
+  maps:merge(resolve_refs(Value2, Spec, Refs),
+             resolve_ref(Ref, Spec, Refs));
 resolve_refs(Value, Spec, Refs) when is_map(Value) ->
   maps:fold(fun (K, V, Acc) ->
                 Acc#{K => resolve_refs(V, Spec, Refs)}
