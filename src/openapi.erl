@@ -1,5 +1,7 @@
 -module(openapi).
 
+-export([definition/2]).
+
 -export_type([specification/0,
               info/0, contact/0, license/0,
               path/0, operation/0, schema/0, schema_type/0, xml/0,
@@ -232,3 +234,7 @@
 
 -type ref() ::
         json_pointer:pointer() | {URI :: binary(), json_pointer:pointer()}.
+
+-spec definition(binary(), specification()) -> {ok, schema()} | error.
+definition(Name, #{definitions := Definitions}) ->
+  maps:find(Name, Definitions).
