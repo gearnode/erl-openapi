@@ -42,7 +42,8 @@ do_generate(Spec = #{definitions := Definitions}, Options) ->
   Types = maps:fold(fun (Name, Schema, Acc) ->
                         [generate_model(Name, Schema, Spec, Options) | Acc]
                     end, [], Definitions),
-  [openapi_gen:module_declaration(ModuleName), $\n,
+  [openapi_gen:header(),
+   openapi_gen:module_declaration(ModuleName), $\n,
    openapi_gen:export_type_declaration([Type || Type <- Types]), $\n,
    lists:join($\n, [openapi_gen:type_declaration(Type) || Type <- Types])].
 
