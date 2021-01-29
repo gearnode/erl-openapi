@@ -51,7 +51,14 @@ do_generate(Spec = #{definitions := Definitions}, Options) ->
         openapi_gen:type().
 generate_model(DefinitionName, Schema, _Spec, Options) ->
   Name = openapi_gen:erlang_name(DefinitionName),
-  {Name, [], generate_type(Schema, Options)}.
+  Desc = case maps:find(description, Schema) of
+           {ok, String} -> ["\n\n", String];
+           error -> []
+         end,
+  #{name => Name,
+    args => [],
+    data => generate_type(Schema, Options),
+    comment => [DefinitionName, Desc]}.
 
 -spec generate_type(openapi:schema(), options()) -> iodata().
 generate_type(Schema = #{type := Types}, Options) when is_list(Types) ->
@@ -94,7 +101,7 @@ generate_type(Schema = #{type := object}, Options) ->
       {ok, false} ->
         [];
       {ok, AdditionalSchema} ->
-        [["_ := ", generate_type(AdditionalSchema, options)]];
+        [["_ := ", generate_type(AdditionalSchema, Options)]];
       error ->
         []
       end,

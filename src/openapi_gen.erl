@@ -2,12 +2,16 @@
 
 -export([module_declaration/1,
          export_type_declaration/1, type_declaration/1,
-         erlang_name/1, erlang_atom/1]).
+         erlang_name/1, erlang_atom/1,
+         comment/1]).
 
 -export_type([type/0,
               error_reason/0]).
 
--type type() :: {Name :: binary(), Args :: [binary()], iodata()}.
+-type type() :: #{name := binary(),
+                  args => [binary()],
+                  data := iodata(),
+                  comment => iodata()}.
 
 -type error_reason() ::
         {invalid_unicode_data, unicode:chardata()}
@@ -24,12 +28,19 @@ export_type_declaration(Types) ->
    ").\n"].
 
 -spec type_declaration(type()) -> iodata().
-type_declaration({Name, Args, Type}) ->
-  ["-type ", Name, "(", [lists:join(", ", Args)] ,") ::\n",
-   "        ", indent(Type, 10),  ".\n"].
+type_declaration(Type = #{name := Name, data := Data}) ->
+  Args = maps:get(args, Type, []),
+  Comment = case maps:find(comment, Type) of
+              {ok, String} -> comment(String);
+              error -> []
+            end,
+  [Comment,
+   "-type ", Name, "(", [lists:join(", ", Args)] ,") ::\n",
+   "        ", indent(Data, 10),  ".\n"].
 
 -spec format_type(type()) -> iodata().
-format_type({Name, Args, _}) ->
+format_type(Type = #{name := Name}) ->
+  Args = maps:get(args, Type, []),
   [Name, $/, integer_to_binary(length(Args))].
 
 -spec erlang_name(binary()) -> binary().
@@ -69,6 +80,20 @@ erlang_atom(Name) ->
       Name2 = string:replace(Name, "'", "\\'", all),
       iolist_to_binary([$', Name2, $'])
   end.
+
+-spec comment(iodata()) -> iodata().
+comment(Data) ->
+  Paragraphs =
+    lists:map(fun (LineData) ->
+                  case unicode:characters_to_list(LineData) of
+                    "" ->
+                      prettypr:break(prettypr:text(""));
+                    Line ->
+                      prettypr:text_par(Line)
+                  end
+              end, string:split(Data, "\n", all)),
+  FilledText = prettypr:format(prettypr:sep(Paragraphs), 77),
+  ["%% ", string:replace(FilledText, "\n", "\n%% ", all), $\n].
 
 -spec indent(iodata(), pos_integer()) -> iodata().
 indent(Data, N) ->
