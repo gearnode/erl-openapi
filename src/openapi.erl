@@ -1,7 +1,8 @@
 -module(openapi).
 
 -export([definition/2,
-         generate_model_data/1, generate_model_data/2, generate_model_file/3]).
+         generate_model_data/1, generate_model_data/2, generate_model_file/3,
+         generate_jsv_data/1, generate_jsv_data/2, generate_jsv_file/3]).
 
 -export_type([error_reason/0,
               specification/0,
@@ -271,6 +272,42 @@ generate_model_data(Input, Options) ->
         ok | {error, openapi_gen:error_reason()}.
 generate_model_file(Input, Output, Options) ->
   case generate_model_data(Input, Options) of
+    {ok, Data} ->
+      case file:write_file(Output, Data) of
+        ok ->
+          ok;
+        {error, Reason} ->
+          {error, {file_error, Reason, Output}}
+      end;
+    {error, Reason} ->
+      {error, Reason}
+  end.
+
+-spec generate_jsv_data(Input :: file:name_all()) ->
+        {ok, iodata()} | {error, openapi_gen:error_reason()}.
+generate_jsv_data(Input) ->
+  generate_jsv_data(Input, #{}).
+
+-spec generate_jsv_data(Input :: file:name_all(), openapi_gen:options()) ->
+        {ok, iodata()} | {error, openapi_gen:error_reason()}.
+generate_jsv_data(Input, Options) ->
+  case openapi_spec:read_file(Input) of
+    {ok, Spec} ->
+      case openapi_jsv_gen:generate(Spec, Options) of
+        {ok, Data} ->
+          {ok, Data};
+        {error, Reason} ->
+          {error, Reason}
+      end;
+    {error, Reason} ->
+      {error, Reason}
+  end.
+
+-spec generate_jsv_file(Input :: file:name_all(), Output :: file:name_all(),
+                        openapi_gen:options()) ->
+        ok | {error, openapi_gen:error_reason()}.
+generate_jsv_file(Input, Output, Options) ->
+  case generate_jsv_data(Input, Options) of
     {ok, Data} ->
       case file:write_file(Output, Data) of
         ok ->
