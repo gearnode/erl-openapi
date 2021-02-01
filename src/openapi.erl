@@ -1,8 +1,9 @@
 -module(openapi).
 
 -export([definition/2,
-         generate_model_data/1, generate_model_data/2, generate_model_file/3,
-         generate_jsv_data/1, generate_jsv_data/2, generate_jsv_file/3]).
+         generate/3,
+         generate_model_data/1, generate_model_data/2,
+         generate_jsv_data/1, generate_jsv_data/2]).
 
 -export_type([error_reason/0,
               specification/0,
@@ -250,6 +251,36 @@
 definition(Name, #{definitions := Definitions}) ->
   maps:find(Name, Definitions).
 
+-spec generate(Input :: file:name_all(), OutputDir :: file:name_all(),
+               openapi_gen:options()) ->
+        ok | {error, openapi:error_reason()}.
+generate(Input, OutputDir, Options) ->
+  case openapi_spec:read_file(Input) of
+    {ok, Spec} ->
+      Mods = [openapi_model_gen, openapi_jsv_gen],
+      Fun = fun
+              F([]) ->
+                ok;
+              F([H | T]) ->
+                case H:generate(Spec, Options) of
+                  {ok, Data} ->
+                    Output0 = [OutputDir, $/, H:module_name(Options), ".erl"],
+                    Output = list_to_binary(Output0),
+                    case file:write_file(Output, Data) of
+                      ok ->
+                        F(T);
+                      {error, Reason} ->
+                        {error, {file_error, Reason, Output}}
+                    end;
+                  {error, Reason} ->
+                    {error, Reason}
+                end
+            end,
+      Fun(Mods);
+    {error, Reason} ->
+      {error, Reason}
+  end.
+
 -spec generate_model_data(Input :: file:name_all()) ->
         {ok, iodata()} | {error, openapi:error_reason()}.
 generate_model_data(Input) ->
@@ -265,22 +296,6 @@ generate_model_data(Input, Options) ->
       {error, Reason}
   end.
 
--spec generate_model_file(Input :: file:name_all(), Output :: file:name_all(),
-                          openapi_gen:options()) ->
-        ok | {error, openapi:error_reason()}.
-generate_model_file(Input, Output, Options) ->
-  case generate_model_data(Input, Options) of
-    {ok, Data} ->
-      case file:write_file(Output, Data) of
-        ok ->
-          ok;
-        {error, Reason} ->
-          {error, {file_error, Reason, Output}}
-      end;
-    {error, Reason} ->
-      {error, Reason}
-  end.
-
 -spec generate_jsv_data(Input :: file:name_all()) ->
         {ok, iodata()} | {error, openapi:error_reason()}.
 generate_jsv_data(Input) ->
@@ -292,22 +307,6 @@ generate_jsv_data(Input, Options) ->
   case openapi_spec:read_file(Input) of
     {ok, Spec} ->
       openapi_jsv_gen:generate(Spec, Options);
-    {error, Reason} ->
-      {error, Reason}
-  end.
-
--spec generate_jsv_file(Input :: file:name_all(), Output :: file:name_all(),
-                        openapi_gen:options()) ->
-        ok | {error, openapi:error_reason()}.
-generate_jsv_file(Input, Output, Options) ->
-  case generate_jsv_data(Input, Options) of
-    {ok, Data} ->
-      case file:write_file(Output, Data) of
-        ok ->
-          ok;
-        {error, Reason} ->
-          {error, {file_error, Reason, Output}}
-      end;
     {error, Reason} ->
       {error, Reason}
   end.

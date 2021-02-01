@@ -1,6 +1,10 @@
 -module(openapi_model_gen).
 
--export([generate/1, generate/2]).
+-export([module_name/1, generate/1, generate/2]).
+
+-spec module_name(openapi_gen:options()) -> binary().
+module_name(Options) ->
+  <<(maps:get(module_prefix, Options, <<>>))/binary, "model">>.
 
 -spec generate(openapi:specification()) ->
         {ok, iodata()} | {error, openapi:error_reason()}.
@@ -32,7 +36,7 @@ generate(Spec, Options) ->
 
 -spec do_generate(openapi:specification(), openapi_gen:options()) -> iodata().
 do_generate(Spec = #{definitions := Definitions}, Options) ->
-  ModuleName = [maps:get(module_prefix, Options, ""), "model"],
+  ModuleName = module_name(Options),
   Types = maps:fold(fun (Name, Schema, Acc) ->
                         [generate_model(Name, Schema, Spec, Options) | Acc]
                     end, [], Definitions),
