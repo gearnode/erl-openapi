@@ -49,7 +49,7 @@ generate_catalog_fun(#{definitions := Definitions}, _Options) ->
                       end, [], Definitions),
   Body = ["  #{",
           lists:join("\n  ",
-                     [[N, " => ", Fun] || {N, Fun} <- JSVDefs]),
+                     [[N, " =>\n    ", Fun] || {N, Fun} <- JSVDefs]),
           "}.\n"],
   ["-type catalog() -> jsv:catalog().\n",
    "catalog() ->\n",
