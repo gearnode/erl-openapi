@@ -71,6 +71,12 @@ generate_jsv_definition_fun(DefName, Schema, Options) ->
 
 -spec generate_jsv_definition(openapi:schema(), openapi_gen:options()) ->
         iodata().
+generate_jsv_definition(_Schema = #{'$ref' := [<<"definitions">>, DefName]},
+                        Options) ->
+  Name = openapi_gen:name(DefName, Options),
+  ["{ref, ", Name, $}];
+generate_jsv_definition(_Schema = #{'$ref' := Pointer}, _Options) ->
+  throw({error, {invalid_schema_ref, json_pointer:serialize(Pointer)}});
 generate_jsv_definition(_Schema = #{type := null}, _Options) ->
   "null";
 generate_jsv_definition(_Schema = #{type := string}, _Options) ->
