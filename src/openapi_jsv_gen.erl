@@ -57,10 +57,15 @@ generate_catalog_fun(#{definitions := Definitions}, _Options) ->
 
 -spec generate_jsv_definition_fun(binary(), openapi:schema(),
                                   openapi_gen:options()) -> iodata().
-generate_jsv_definition_fun(DefName, Def, Options) ->
+generate_jsv_definition_fun(DefName, Schema, Options) ->
   Name = openapi_gen:name(DefName),
-  Body = ["  ", generate_jsv_definition(Def, Options), ".\n"],
-  ["-spec ", Name, "_definition() -> jsv:definition().\n",
+  Body = ["  ", generate_jsv_definition(Schema, Options), ".\n"],
+  Desc = case maps:find(description, Schema) of
+           {ok, String} -> ["\n\n", String];
+           error -> []
+         end,
+  [openapi_gen:comment([DefName, Desc]),
+   "-spec ", Name, "_definition() -> jsv:definition().\n",
    Name, "_definition() ->\n",
    openapi_gen:indent(Body, 2)].
 
