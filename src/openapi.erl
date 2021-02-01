@@ -19,7 +19,9 @@
 -type error_reason() ::
         {file_error, term(), file:name_all()}
       | {invalid_json_data, json:error()}
-      | {invalid_specification, [jsv:value_error()]}.
+      | {invalid_specification, [jsv:value_error()]}
+      | {invalid_unicode_data, unicode:chardata()}
+      | {incomplete_unicode_data, unicode:chardata()}.
 
 -type specification() ::
         #{info := info(),
@@ -248,28 +250,23 @@ definition(Name, #{definitions := Definitions}) ->
   maps:find(Name, Definitions).
 
 -spec generate_model_data(Input :: file:name_all()) ->
-        {ok, iodata()} | {error, openapi_gen:error_reason()}.
+        {ok, iodata()} | {error, openapi:error_reason()}.
 generate_model_data(Input) ->
   generate_model_data(Input, #{}).
 
 -spec generate_model_data(Input :: file:name_all(), openapi_gen:options()) ->
-        {ok, iodata()} | {error, openapi_gen:error_reason()}.
+        {ok, iodata()} | {error, openapi:error_reason()}.
 generate_model_data(Input, Options) ->
   case openapi_spec:read_file(Input) of
     {ok, Spec} ->
-      case openapi_model_gen:generate(Spec, Options) of
-        {ok, Data} ->
-          {ok, Data};
-        {error, Reason} ->
-          {error, Reason}
-      end;
+      openapi_model_gen:generate(Spec, Options);
     {error, Reason} ->
       {error, Reason}
   end.
 
 -spec generate_model_file(Input :: file:name_all(), Output :: file:name_all(),
                           openapi_gen:options()) ->
-        ok | {error, openapi_gen:error_reason()}.
+        ok | {error, openapi:error_reason()}.
 generate_model_file(Input, Output, Options) ->
   case generate_model_data(Input, Options) of
     {ok, Data} ->
@@ -284,28 +281,23 @@ generate_model_file(Input, Output, Options) ->
   end.
 
 -spec generate_jsv_data(Input :: file:name_all()) ->
-        {ok, iodata()} | {error, openapi_gen:error_reason()}.
+        {ok, iodata()} | {error, openapi:error_reason()}.
 generate_jsv_data(Input) ->
   generate_jsv_data(Input, #{}).
 
 -spec generate_jsv_data(Input :: file:name_all(), openapi_gen:options()) ->
-        {ok, iodata()} | {error, openapi_gen:error_reason()}.
+        {ok, iodata()} | {error, openapi:error_reason()}.
 generate_jsv_data(Input, Options) ->
   case openapi_spec:read_file(Input) of
     {ok, Spec} ->
-      case openapi_jsv_gen:generate(Spec, Options) of
-        {ok, Data} ->
-          {ok, Data};
-        {error, Reason} ->
-          {error, Reason}
-      end;
+      openapi_jsv_gen:generate(Spec, Options);
     {error, Reason} ->
       {error, Reason}
   end.
 
 -spec generate_jsv_file(Input :: file:name_all(), Output :: file:name_all(),
                         openapi_gen:options()) ->
-        ok | {error, openapi_gen:error_reason()}.
+        ok | {error, openapi:error_reason()}.
 generate_jsv_file(Input, Output, Options) ->
   case generate_jsv_data(Input, Options) of
     {ok, Data} ->

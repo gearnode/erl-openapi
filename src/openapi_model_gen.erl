@@ -3,12 +3,12 @@
 -export([generate/1, generate/2]).
 
 -spec generate(openapi:specification()) ->
-        {ok, iodata()} | {error, openapi_gen:error_reason()}.
+        {ok, iodata()} | {error, openapi:error_reason()}.
 generate(Spec) ->
   generate(Spec, #{}).
 
 -spec generate(openapi:specification(), openapi_gen:options()) ->
-        {ok, iodata()} | {error, openapi_gen:error_reason()}.
+        {ok, iodata()} | {error, openapi:error_reason()}.
 generate(Spec, Options) ->
   try
     Data = do_generate(Spec, Options),

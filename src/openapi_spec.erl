@@ -2,7 +2,8 @@
 
 -export([read_file/1, read/1, read_value/1]).
 
--spec read_file(file:name_all()) -> ok | {error, openapi:error_reason()}.
+-spec read_file(file:name_all()) ->
+        {ok, openapi:specification()} | {error, openapi:error_reason()}.
 read_file(Path) ->
   case file:read_file(Path) of
     {ok, Data} ->
@@ -11,7 +12,8 @@ read_file(Path) ->
       {error, {file_error, Reason, Path}}
   end.
 
--spec read(binary()) -> ok | {error, openapi:error_reason()}.
+-spec read(binary()) ->
+        {ok, openapi:specification()} | {error, openapi:error_reason()}.
 read(Data) ->
   case json:parse(Data) of
     {ok, Value} ->

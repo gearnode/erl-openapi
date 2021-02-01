@@ -1,12 +1,12 @@
 -module(openapi_gen).
 
 -export([header/0, module_declaration/1,
-         export_type_declaration/1, type_declaration/1,
-         name/1, atom/1, comment/1]).
+         export_declaration/1, export_type_declaration/1,
+         type_declaration/1,
+         name/1, atom/1, comment/1,
+         indent/2]).
 
--export_type([options/0,
-              type/0,
-              error_reason/0]).
+-export_type([options/0, type/0]).
 
 -type options() ::
         #{module_prefix => binary(),
@@ -16,10 +16,6 @@
                   args => [binary()],
                   data := iodata(),
                   comment => iodata()}.
-
--type error_reason() ::
-        {invalid_unicode_data, unicode:chardata()}
-      | {incomplete_unicode_data, unicode:chardata()}.
 
 -spec header() -> iodata().
 header() ->
@@ -33,6 +29,12 @@ header() ->
 -spec module_declaration(Name :: iodata()) -> iodata().
 module_declaration(Name) ->
   ["-module(", Name, ")", $\n].
+
+-spec export_declaration([iodata()]) -> iodata().
+export_declaration(FunSignatures) ->
+  ["-export(",
+   lists:join(",\n             ", FunSignatures),
+   ").\n"].
 
 -spec export_type_declaration([type()]) -> iodata().
 export_type_declaration(Types) ->
