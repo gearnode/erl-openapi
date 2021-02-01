@@ -57,6 +57,12 @@ generate_model(DefinitionName, Schema, _Spec, Options) ->
     comment => [DefinitionName, Desc]}.
 
 -spec generate_type(openapi:schema(), openapi_gen:options()) -> iodata().
+generate_type(_Schema = #{'$ref' := [<<"definitions">>, DefName]}, Options) ->
+  ModuleName = [maps:get(module_prefix, Options, ""), "model"],
+  Name = openapi_gen:name(DefName, Options),
+  [ModuleName, $:, Name, "()"];
+generate_type(_Schema = #{'$ref' := Pointer}, _Options) ->
+  throw({error, {invalid_schema_ref, json_pointer:serialize(Pointer)}});
 generate_type(Schema = #{type := Types}, Options) when is_list(Types) ->
   generate_type_union([Schema#{type => Type} || Type <- Types], Options);
 generate_type(_Schema = #{type := null}, _Options) ->
