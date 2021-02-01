@@ -98,7 +98,7 @@ generate_jsv_definition(Schema = #{type := object}, Options) ->
   Required = maps:get(required, Schema, []),
   Required2 = lists:join(",\n", [openapi_gen:atom(M) || M <- Required]),
   RequiredConstraint = ["required =>\n  ",
-                        openapi_gen:indent([$[, Required2, $]], 3)],
+                        openapi_gen:indent([$[, Required2, $]], 4)],
   Properties = maps:get(properties, Schema, #{}),
   Members =
     maps:fold(fun (MName, MSchema, Acc) ->
@@ -122,8 +122,9 @@ generate_jsv_definition(Schema = #{type := object}, Options) ->
       error ->
         Constraints1
       end,
-  ["#{",
-   openapi_gen:indent(lists:join(",\n", Constraints2), 2), "}"];
+  ConstraintsData = lists:join(",\n", Constraints2),
+  ["{object,\n",
+   " #{", openapi_gen:indent(ConstraintsData, 3), "}}"];
 generate_jsv_definition(_Schema, _Options) ->
   "any".
 
