@@ -1,8 +1,10 @@
 -module(openapi).
 
--export([definition/2]).
+-export([definition/2,
+         generate_model_data/1, generate_model_data/2, generate_model_file/3]).
 
--export_type([specification/0,
+-export_type([error_reason/0,
+              specification/0,
               info/0, contact/0, license/0,
               path/0, operation/0, schema/0, schema_type/0, xml/0,
               parameter/0, parameter_location/0, parameter_type/0,
@@ -12,6 +14,11 @@
               security/0, security_scheme/0, security_scheme_location/0,
               oauth2_flow/0, security_requirement/0, tag/0,
               external_documentation/0, ref/0]).
+
+-type error_reason() ::
+        {file_error, term(), file:name_all()}
+      | {invalid_json_data, json:error()}
+      | {invalid_specification, [jsv:value_error()]}.
 
 -type specification() ::
         #{info := info(),
@@ -238,3 +245,39 @@
 -spec definition(binary(), specification()) -> {ok, schema()} | error.
 definition(Name, #{definitions := Definitions}) ->
   maps:find(Name, Definitions).
+
+-spec generate_model_data(Input :: file:name_all()) ->
+        {ok, iodata()} | {error, openapi_gen:error_reason()}.
+generate_model_data(Input) ->
+  generate_model_data(Input, #{}).
+
+-spec generate_model_data(Input :: file:name_all(), openapi_gen:options()) ->
+        {ok, iodata()} | {error, openapi_gen:error_reason()}.
+generate_model_data(Input, Options) ->
+  case openapi_spec:read_file(Input) of
+    {ok, Spec} ->
+      case openapi_model_gen:generate(Spec, Options) of
+        {ok, Data} ->
+          {ok, Data};
+        {error, Reason} ->
+          {error, Reason}
+      end;
+    {error, Reason} ->
+      {error, Reason}
+  end.
+
+-spec generate_model_file(Input :: file:name_all(), Output :: file:name_all(),
+                          openapi_gen:options()) ->
+        ok | {error, openapi_gen:error_reason()}.
+generate_model_file(Input, Output, Options) ->
+  case generate_model_data(Input, Options) of
+    {ok, Data} ->
+      case file:write_file(Output, Data) of
+        ok ->
+          ok;
+        {error, Reason} ->
+          {error, {file_error, Reason, Output}}
+      end;
+    {error, Reason} ->
+      {error, Reason}
+  end.

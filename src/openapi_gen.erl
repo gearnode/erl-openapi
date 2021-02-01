@@ -4,8 +4,13 @@
          export_type_declaration/1, type_declaration/1,
          name/1, atom/1, comment/1]).
 
--export_type([type/0,
+-export_type([options/0,
+              type/0,
               error_reason/0]).
+
+-type options() ::
+        #{module_prefix => binary(),
+          return_binary => boolean()}.
 
 -type type() :: #{name := binary(),
                   args => [binary()],

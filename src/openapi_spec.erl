@@ -2,14 +2,7 @@
 
 -export([read_file/1, read/1, read_value/1]).
 
--export_type([error_reason/0]).
-
--type error_reason() ::
-        {file_error, term(), file:name_all()}
-      | {invalid_json_data, json:error()}
-      | {invalid_specification, [jsv:value_error()]}.
-
--spec read_file(file:name_all()) -> ok | {error, error_reason()}.
+-spec read_file(file:name_all()) -> ok | {error, openapi:error_reason()}.
 read_file(Path) ->
   case file:read_file(Path) of
     {ok, Data} ->
@@ -18,7 +11,7 @@ read_file(Path) ->
       {error, {file_error, Reason, Path}}
   end.
 
--spec read(binary()) -> ok | {error, error_reason()}.
+-spec read(binary()) -> ok | {error, openapi:error_reason()}.
 read(Data) ->
   case json:parse(Data) of
     {ok, Value} ->
@@ -28,7 +21,7 @@ read(Data) ->
   end.
 
 -spec read_value(json:value()) ->
-        {ok, openapi:specification()} | {error, error_reason()}.
+        {ok, openapi:specification()} | {error, openapi:error_reason()}.
 read_value(Value) ->
   Options = #{type_map => openapi_jsv:type_map(),
               invalid_member_handling => keep,
