@@ -3,13 +3,16 @@
 -export([header/0, module_declaration/1,
          export_declaration/1, export_type_declaration/1,
          type_declaration/1,
-         name/1, atom/1, comment/1,
+         name/2, atom/1, comment/1,
          indent/2]).
 
 -export_type([options/0, type/0]).
 
+-type rename_model_fun() :: fun((binary()) -> binary()).
+
 -type options() ::
         #{module_prefix => binary(),
+          rename_model => rename_model_fun(),
           return_binary => boolean()}.
 
 -type type() :: #{name := binary(),
@@ -58,8 +61,12 @@ format_type(Type = #{name := Name}) ->
   Args = maps:get(args, Type, []),
   [Name, $/, integer_to_binary(length(Args))].
 
--spec name(binary()) -> binary().
-name(Name) ->
+-spec name(binary(), options()) -> binary().
+name(Name0, Options) ->
+  Name = case maps:find(rename_model, Options) of
+           {ok, Fun} -> Fun(Name0);
+           error -> Name0
+         end,
   Name2 = re:replace(Name, "[^A-Za-z0-9_]+", "_",
                      [global, {return, binary}]),
   name(Name2, <<>>, undefined).

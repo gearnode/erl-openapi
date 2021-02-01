@@ -46,7 +46,7 @@ do_generate(Spec = #{definitions := Definitions}, Options) ->
                      openapi_gen:options()) ->
         openapi_gen:type().
 generate_model(DefinitionName, Schema, _Spec, Options) ->
-  Name = openapi_gen:name(DefinitionName),
+  Name = openapi_gen:name(DefinitionName, Options),
   Desc = case maps:find(description, Schema) of
            {ok, String} -> ["\n\n", String];
            error -> []

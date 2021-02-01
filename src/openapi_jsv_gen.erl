@@ -42,9 +42,9 @@ do_generate(Spec = #{definitions := Definitions}, Options) ->
 
 -spec generate_catalog_fun(openapi:specification(), openapi_gen:options()) ->
         iodata().
-generate_catalog_fun(#{definitions := Definitions}, _Options) ->
+generate_catalog_fun(#{definitions := Definitions}, Options) ->
   JSVDefs = maps:fold(fun (DefName, _Def, Acc) ->
-                          Name = openapi_gen:name(DefName),
+                          Name = openapi_gen:name(DefName, Options),
                           [{Name, <<Name/binary, "_definition()">>} | Acc]
                       end, [], Definitions),
   Body = ["  #{",
@@ -58,7 +58,7 @@ generate_catalog_fun(#{definitions := Definitions}, _Options) ->
 -spec generate_jsv_definition_fun(binary(), openapi:schema(),
                                   openapi_gen:options()) -> iodata().
 generate_jsv_definition_fun(DefName, Schema, Options) ->
-  Name = openapi_gen:name(DefName),
+  Name = openapi_gen:name(DefName, Options),
   Body = ["  ", generate_jsv_definition(Schema, Options), ".\n"],
   Desc = case maps:find(description, Schema) of
            {ok, String} -> ["\n\n", String];
