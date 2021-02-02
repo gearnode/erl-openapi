@@ -41,9 +41,9 @@ export_declaration(FunSignatures) ->
 
 -spec export_type_declaration([type()]) -> iodata().
 export_type_declaration(Types) ->
-  ["-export_type(",
-   lists:join(",\n             ", [format_type(Type) || Type <- Types]),
-   ").\n"].
+  ["-export_type([",
+   lists:join(",\n              ", [format_type(Type) || Type <- Types]),
+   "]).\n"].
 
 -spec type_declaration(type()) -> iodata().
 type_declaration(Type = #{name := Name, data := Data}) ->
