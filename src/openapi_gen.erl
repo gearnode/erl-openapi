@@ -31,7 +31,7 @@ header() ->
 
 -spec module_declaration(Name :: iodata()) -> iodata().
 module_declaration(Name) ->
-  ["-module(", Name, ")", $\n].
+  ["-module(", Name, ").\n"].
 
 -spec export_declaration([iodata()]) -> iodata().
 export_declaration(FunSignatures) ->
