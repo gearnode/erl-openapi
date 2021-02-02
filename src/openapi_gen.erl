@@ -35,9 +35,9 @@ module_declaration(Name) ->
 
 -spec export_declaration([iodata()]) -> iodata().
 export_declaration(FunSignatures) ->
-  ["-export(",
-   lists:join(",\n             ", FunSignatures),
-   ").\n"].
+  ["-export([",
+   lists:join(",\n              ", FunSignatures),
+   "]).\n"].
 
 -spec export_type_declaration([type()]) -> iodata().
 export_type_declaration(Types) ->
