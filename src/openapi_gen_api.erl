@@ -26,21 +26,23 @@ generate(Spec, Options) ->
 
 -spec do_generate(openapi:specification(), openapi_gen:options()) -> iodata().
 do_generate(Spec = #{paths := Paths}, Options) ->
-  Funs0 = generate_paths_operations(Paths, Spec, Options),
-  Funs = lists:sort(fun ({Name1, _}, {Name2, _}) ->
-                        Name1 =< Name2
-                    end, Funs0),
-  FunSignatures = [[Name, "/1, ", Name, "/2"] || {Name, _} <- Funs],
+  Ops0 = generate_paths_operations(Paths, Spec, Options),
+  Ops = lists:sort(fun ({Name1, _, _}, {Name2, _, _}) ->
+                       Name1 =< Name2
+                   end, Ops0),
+  FunSignatures = [[Name, "/1, ", Name, "/2"] || {Name, _, _} <- Ops],
+  Types = [OutputType || {_, _, OutputType} <- Ops],
   ModuleName = module_name(Options),
   [openapi_gen:header(),
    openapi_gen:module_declaration(ModuleName), $\n,
    openapi_gen:export_declaration(FunSignatures), $\n,
-   lists:join($\n, [Data || {_, Data} <- Funs])].
+   openapi_gen:export_type_declaration(Types), $\n,
+   lists:join($\n, [Data || {_, Data, _} <- Ops])].
 
 -spec generate_paths_operations(#{binary() := openapi:path()},
                                 openapi:specification(),
                                 openapi_gen:options()) ->
-        [{binary(), iodata()}].
+        [{binary(), iodata(), openapi_gen:type()}].
 generate_paths_operations(Paths, Spec, Options) ->
   maps:fold(fun (URI, Path, Acc) ->
                 Acc ++ generate_path_operations(URI, Path, Spec, Options)
@@ -49,7 +51,7 @@ generate_paths_operations(Paths, Spec, Options) ->
 -spec generate_path_operations(binary(), openapi:path(),
                                openapi:specification(),
                                openapi_gen:options()) ->
-        [{binary(), iodata()}].
+        [{binary(), iodata(), openapi_gen:type()}].
 generate_path_operations(URI, Path, Spec, Options) ->
   Methods = [get, put, post, delete, options, head, patch],
   maps:fold(fun (Method, Op, Acc) ->
@@ -60,25 +62,57 @@ generate_path_operations(URI, Path, Spec, Options) ->
 -spec generate_operation(atom(), openapi:operation(),
                          binary(), openapi:path(),
                          openapi:specification(), openapi_gen:options()) ->
-        {FunName :: binary(), iodata()}.
+        {FunName :: binary(), iodata(), openapi_gen:type()}.
 generate_operation(Method, Op = #{operationId := Id}, URI, _Path, _Spec,
                    Options) ->
   Name = openapi_gen:name(Id, Options),
-  InputType = "any", % TODO
-  OutputType = "any", % TODO
-  OutputSignature = ["{ok, ", OutputType, "()} | {error, term()}"],
+  InputType = "any()", % TODO
+  OutputType = generate_operation_output_type(Name, Op),
+  OutputSignature = ["{ok, ", maps:get(name, OutputType), "()}",
+                     " | {error, term()}"],
   Comment = generate_operation_comment(Op, URI, Method),
   Fun1Data =
-    ["-spec ", Name, "(", InputType,"()) ->\n",
+    ["-spec ", Name, "(", InputType,") ->\n",
      "        ", OutputSignature, ".\n",
      Name, "(Input) ->\n",
      "  ", Name, "(Input, #{}).\n\n"],
   Fun2Data =
-    ["-spec ", Name, "(", InputType,"(), mhttp:request_options()) ->\n",
+    ["-spec ", Name, "(", InputType,", mhttp:request_options()) ->\n",
      "        ", OutputSignature, ".\n",
      Name, "(_Input, _Options) ->\n",
      "  ", "{error, unimplemented}.\n"], % TODO
-  {Name, [Comment, Fun1Data, Fun2Data]}.
+  Data = [Comment,
+          openapi_gen:type_declaration(OutputType), $\n,
+          Fun1Data,
+          Fun2Data],
+  {Name, Data, OutputType}.
+
+-spec generate_operation_output_type(OpName :: binary(),
+                                     openapi:operation()) ->
+        openapi_gen:type().
+generate_operation_output_type(OpName, #{responses := Responses}) ->
+  DefaultType =
+    case maps:find(<<"default">>, Responses) of
+      {ok, _Response} ->
+        ["{mhttp:status(), mhttp:header(), ",
+         "json:value()", % TODO
+         "}"];
+      error ->
+        ["{mhttp:status(), mhttp:header(), json:value()}"]
+    end,
+  Types =
+    maps:fold(fun (StatusString, _Response, Acc) ->
+                  Status = case StatusString of
+                             <<"default">> -> "mhttp:status()";
+                             _ -> StatusString
+                           end,
+                  Type = ["{", Status, ", mhttp:header(), ",
+                          "json:value()", % TODO
+                          "}"],
+                  [Type | Acc]
+              end, [], maps:without([<<"default">>], Responses)),
+  #{name => <<OpName/binary, "_output">>,
+    data => lists:join(" |\n", Types ++ [DefaultType])}.
 
 -spec generate_operation_comment(openapi:operation(), binary(), atom()) ->
         iodata().

@@ -22,7 +22,8 @@
       | {invalid_specification, [jsv:value_error()]}
       | {invalid_unicode_data, unicode:chardata()}
       | {incomplete_unicode_data, unicode:chardata()}
-      | {invalid_schema_ref, binary()}.
+      | {invalid_schema_ref, binary()}
+      | {invalid_response_status, binary()}.
 
 -type specification() ::
         #{info := info(),

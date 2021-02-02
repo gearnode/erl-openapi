@@ -71,7 +71,7 @@ type_declaration(Type = #{name := Name, data := Data}) ->
             end,
   [Comment,
    "-type ", Name, "(", [lists:join(", ", Args)] ,") ::\n",
-   "        ", indent(Data, 10),  ".\n"].
+   "        ", indent(Data, 8),  ".\n"].
 
 -spec format_type(type()) -> iodata().
 format_type(Type = #{name := Name}) ->
