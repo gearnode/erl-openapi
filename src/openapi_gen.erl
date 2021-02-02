@@ -95,13 +95,22 @@ name(<<C/utf8, Rest/binary>>, Acc, _) ->
 
 -spec atom(binary()) -> binary().
 atom(Name) ->
-  case re:run(Name, "^[a-z][A-Za-z_@]*$") of
-    {match, _} ->
-      Name;
-    nomatch ->
-      Name2 = string:replace(Name, "'", "\\'", all),
-      iolist_to_binary([$', Name2, $'])
+  case is_reserved_word(Name) of
+    true ->
+      quote_atom(Name);
+    false ->
+      case re:run(Name, "^[a-z][A-Za-z_@]*$") of
+        {match, _} ->
+          Name;
+        nomatch ->
+          quote_atom(Name)
+      end
   end.
+
+-spec quote_atom(binary()) -> binary().
+quote_atom(Name) ->
+  Name2 = string:replace(Name, "'", "\\'", all),
+  iolist_to_binary([$', Name2, $']).
 
 -spec comment(iodata()) -> iodata().
 comment(Data) ->
@@ -121,3 +130,13 @@ comment(Data) ->
 indent(Data, N) ->
   S = [$\s || _ <- lists:seq(1, N)],
   string:replace(Data, "\n", ["\n", S], all).
+
+-spec is_reserved_word(binary()) -> boolean().
+is_reserved_word(Word) ->
+  lists:member(Word, [<<"after">>, <<"and">>, <<"andalso">>, <<"band">>,
+                      <<"begin">>, <<"bnot">>, <<"bor">>, <<"bsl">>,
+                      <<"bsr">>, <<"bxor">>, <<"case">>, <<"catch">>,
+                      <<"cond">>, <<"div">>, <<"end">>, <<"fun">>, <<"if">>,
+                      <<"let">>, <<"not">>, <<"of">>, <<"or">>, <<"orelse">>,
+                      <<"receive">>, <<"rem">>, <<"try">>, <<"when">>,
+                      <<"xor">>]).
