@@ -52,10 +52,10 @@ generate_catalog_fun(#{definitions := Definitions}, Options) ->
                           [{Name, <<Name/binary, "_definition()">>} | Acc]
                       end, [], Definitions),
   Body = ["  #{",
-          lists:join("\n  ",
+          lists:join(",\n  ",
                      [[N, " =>\n    ", Fun] || {N, Fun} <- JSVDefs]),
           "}.\n"],
-  ["-type catalog() -> jsv:catalog().\n",
+  ["-spec catalog() -> jsv:catalog().\n",
    "catalog() ->\n",
    openapi_gen:indent(Body, 2)].
 
