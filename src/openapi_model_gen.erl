@@ -37,9 +37,12 @@ generate(Spec, Options) ->
 -spec do_generate(openapi:specification(), openapi_gen:options()) -> iodata().
 do_generate(Spec = #{definitions := Definitions}, Options) ->
   ModuleName = module_name(Options),
-  Types = maps:fold(fun (Name, Schema, Acc) ->
-                        [generate_model(Name, Schema, Spec, Options) | Acc]
-                    end, [], Definitions),
+  Types0 = maps:fold(fun (Name, Schema, Acc) ->
+                         [generate_model(Name, Schema, Spec, Options) | Acc]
+                     end, [], Definitions),
+  Types = lists:sort(fun (#{name := T1Name}, #{name := T2Name}) ->
+                         T1Name =< T2Name
+                     end, Types0),
   [openapi_gen:header(),
    openapi_gen:module_declaration(ModuleName), $\n,
    openapi_gen:export_type_declaration([Type || Type <- Types]), $\n,

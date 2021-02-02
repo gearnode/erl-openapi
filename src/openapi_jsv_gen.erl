@@ -47,10 +47,13 @@ do_generate(Spec = #{definitions := Definitions}, Options) ->
 -spec generate_catalog_fun(openapi:specification(), openapi_gen:options()) ->
         iodata().
 generate_catalog_fun(#{definitions := Definitions}, Options) ->
-  JSVDefs = maps:fold(fun (DefName, _Def, Acc) ->
-                          Name = openapi_gen:name(DefName, Options),
-                          [{Name, <<Name/binary, "_definition()">>} | Acc]
-                      end, [], Definitions),
+  JSVDefs0 = maps:fold(fun (DefName, _Def, Acc) ->
+                           Name = openapi_gen:name(DefName, Options),
+                           [{Name, <<Name/binary, "_definition()">>} | Acc]
+                       end, [], Definitions),
+  JSVDefs = lists:sort(fun({N1, _}, {N2, _}) ->
+                           N1 =< N2
+                       end, JSVDefs0),
   Body = ["  #{",
           lists:join(",\n  ",
                      [[N, " =>\n    ", Fun] || {N, Fun} <- JSVDefs]),
