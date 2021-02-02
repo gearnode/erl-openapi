@@ -1,6 +1,7 @@
 -module(openapi_gen).
 
--export([header/0, module_declaration/1,
+-export([unicode_iolist_to_binary/1,
+         header/0, module_declaration/1,
          export_declaration/1, export_type_declaration/1,
          type_declaration/1,
          name/2, atom/1, comment/1,
@@ -19,6 +20,22 @@
                   args => [binary()],
                   data := iodata(),
                   comment => iodata()}.
+
+-callback module_name(options()) -> binary().
+-callback generate(openapi:specification(), options()) ->
+  {ok, iodata()} | {error, openapi:error_reason()}.
+
+-spec unicode_iolist_to_binary(iolist()) ->
+        {ok, binary()} | {error, openapi:error_reason()}.
+unicode_iolist_to_binary(Data) ->
+  case unicode:characters_to_binary(Data) of
+    Bin when is_binary(Bin) ->
+      {ok, Bin};
+    {error, _, Rest} ->
+      {error, {invalid_unicode_data, Rest}};
+    {incomplete, _, Rest} ->
+      {error, {incomplete_unicode_data, Rest}}
+  end.
 
 -spec header() -> iodata().
 header() ->

@@ -2,8 +2,7 @@
 
 -export([definition/2,
          generate/3,
-         generate_model_data/1, generate_model_data/2,
-         generate_jsv_data/1, generate_jsv_data/2]).
+         generate_data/2, generate_data/3]).
 
 -export_type([error_reason/0,
               specification/0,
@@ -257,7 +256,8 @@ definition(Name, #{definitions := Definitions}) ->
 generate(Input, OutputDir, Options) ->
   case openapi_spec:read_file(Input) of
     {ok, Spec} ->
-      Mods = [openapi_model_gen, openapi_jsv_gen],
+      Mods = [openapi_gen_model,
+              openapi_gen_jsv],
       Fun = fun
               F([]) ->
                 ok;
@@ -281,32 +281,18 @@ generate(Input, OutputDir, Options) ->
       {error, Reason}
   end.
 
--spec generate_model_data(Input :: file:name_all()) ->
+-spec generate_data(module(), Input :: file:name_all()) ->
         {ok, iodata()} | {error, openapi:error_reason()}.
-generate_model_data(Input) ->
-  generate_model_data(Input, #{}).
+generate_data(Module, Input) ->
+  generate_data(Module, Input, #{}).
 
--spec generate_model_data(Input :: file:name_all(), openapi_gen:options()) ->
+-spec generate_data(module(), Input :: file:name_all(),
+                    openapi_gen:options()) ->
         {ok, iodata()} | {error, openapi:error_reason()}.
-generate_model_data(Input, Options) ->
+generate_data(Module, Input, Options) ->
   case openapi_spec:read_file(Input) of
     {ok, Spec} ->
-      openapi_model_gen:generate(Spec, Options);
-    {error, Reason} ->
-      {error, Reason}
-  end.
-
--spec generate_jsv_data(Input :: file:name_all()) ->
-        {ok, iodata()} | {error, openapi:error_reason()}.
-generate_jsv_data(Input) ->
-  generate_jsv_data(Input, #{}).
-
--spec generate_jsv_data(Input :: file:name_all(), openapi_gen:options()) ->
-        {ok, iodata()} | {error, openapi:error_reason()}.
-generate_jsv_data(Input, Options) ->
-  case openapi_spec:read_file(Input) of
-    {ok, Spec} ->
-      openapi_jsv_gen:generate(Spec, Options);
+      Module:generate(Spec, Options);
     {error, Reason} ->
       {error, Reason}
   end.

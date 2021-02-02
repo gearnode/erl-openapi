@@ -1,15 +1,12 @@
--module(openapi_model_gen).
+-module(openapi_gen_model).
 
--export([module_name/1, generate/1, generate/2]).
+-behaviour(openapi_gen).
+
+-export([module_name/1, generate/2]).
 
 -spec module_name(openapi_gen:options()) -> binary().
 module_name(Options) ->
   <<(maps:get(module_prefix, Options, <<>>))/binary, "model">>.
-
--spec generate(openapi:specification()) ->
-        {ok, iodata()} | {error, openapi:error_reason()}.
-generate(Spec) ->
-  generate(Spec, #{}).
 
 -spec generate(openapi:specification(), openapi_gen:options()) ->
         {ok, iodata()} | {error, openapi:error_reason()}.
@@ -18,14 +15,7 @@ generate(Spec, Options) ->
     Data = do_generate(Spec, Options),
     case maps:get(return_binary, Options, false) of
       true ->
-        case unicode:characters_to_binary(Data) of
-          Bin when is_binary(Bin) ->
-            {ok, Bin};
-          {error, _, Rest} ->
-            {error, {invalid_unicode_data, Rest}};
-          {incomplete, _, Rest} ->
-            {error, {incomplete_unicode_data, Rest}}
-        end;
+        openapi_gen:unicode_iolist_to_binary(Data);
       false ->
         {ok, Data}
     end
