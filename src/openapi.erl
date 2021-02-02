@@ -257,7 +257,8 @@ generate(Input, OutputDir, Options) ->
   case openapi_spec:read_file(Input) of
     {ok, Spec} ->
       Mods = [openapi_gen_model,
-              openapi_gen_jsv],
+              openapi_gen_jsv,
+              openapi_gen_api],
       Fun = fun
               F([]) ->
                 ok;
