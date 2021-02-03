@@ -99,34 +99,43 @@ generate_jsv_definition(Schema = #{type := array}, Options) ->
       "array"
   end;
 generate_jsv_definition(Schema = #{type := object}, Options) ->
-  Required = maps:get(required, Schema, []),
-  Required2 = lists:join(",\n", [openapi_gen:atom(M) || M <- Required]),
-  RequiredConstraint = ["required =>\n  ",
-                        openapi_gen:indent([$[, Required2, $]], 4)],
-  Properties = maps:get(properties, Schema, #{}),
-  Members =
-    maps:fold(fun (MName, MSchema, Acc) ->
-                  MType = generate_jsv_definition(MSchema, Options),
-                  [[openapi_gen:atom(MName), " =>\n  ",
-                    openapi_gen:indent(MType, 2)] | Acc]
-              end, [], Properties),
-  Members2 = lists:join(",\n", Members),
-  MembersConstraint = ["members =>\n  ",
-                       openapi_gen:indent(["#{", Members2, $}], 4)],
-  Constraints1 = [MembersConstraint, RequiredConstraint],
-  Constraints2 =
+  MembersConstraint =
+    case maps:find(properties, Schema) of
+      {ok, Properties} ->
+        Members =
+          maps:fold(fun (MName, MSchema, Acc) ->
+                        MType = generate_jsv_definition(MSchema, Options),
+                        [[openapi_gen:atom(MName), " =>\n  ",
+                          openapi_gen:indent(MType, 2)] | Acc]
+                    end, [], Properties),
+        Members2 = lists:join(",\n", Members),
+        ["members =>\n  ", openapi_gen:indent(["#{", Members2, $}], 4)];
+      error ->
+        undefined
+    end,
+  RequiredConstraint =
+    case maps:find(required, Schema) of
+      {ok, Required} ->
+        Required2 = lists:join(",\n", [openapi_gen:atom(M) || M <- Required]),
+        ["required =>\n  ", openapi_gen:indent([$[, Required2, $]], 3)];
+      error ->
+        undefined
+    end,
+  ValueConstraint =
     case maps:find(additionalProperties, Schema) of
       {ok, true} ->
-        [["value =>\n  any"] | Constraints1];
+        ["value =>\n  any"];
       {ok, false} ->
-        Constraints1;
+        undefined;
       {ok, AdditionalSchema} ->
         Value = generate_jsv_definition(AdditionalSchema, Options),
-        [["value =>\n  ", Value] | Constraints1];
+        ["value =>\n  ", Value];
       error ->
-        Constraints1
+        undefined
       end,
-  ConstraintsData = lists:join(",\n", Constraints2),
+  Constraints0 = [MembersConstraint, RequiredConstraint, ValueConstraint],
+  Constraints = [C || C <- Constraints0, C /= undefined],
+  ConstraintsData = lists:join(",\n", Constraints),
   ["{object,\n",
    " #{", openapi_gen:indent(ConstraintsData, 3), "}}"];
 generate_jsv_definition(_Schema, _Options) ->
