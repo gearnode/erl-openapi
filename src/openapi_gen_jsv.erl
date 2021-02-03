@@ -12,7 +12,8 @@ module_name(Options) ->
         {ok, iodata()} | {error, openapi:error_reason()}.
 generate(Spec, Options) ->
   try
-    Data = do_generate(Spec, Options),
+    Data0 = do_generate(Spec, Options),
+    Data = openapi_gen:remove_trailing_whitespaces(Data0),
     case maps:get(return_binary, Options, false) of
       true ->
         openapi_gen:unicode_iolist_to_binary(Data);

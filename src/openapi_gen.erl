@@ -4,8 +4,7 @@
          header/0, module_declaration/1,
          export_declaration/1, export_type_declaration/1,
          type_declaration/1,
-         name/2, atom/1, comment/1,
-         indent/2]).
+         name/2, atom/1, comment/1, indent/2, remove_trailing_whitespaces/1]).
 
 -export_type([options/0, type/0]).
 
@@ -147,6 +146,10 @@ comment(Data) ->
 indent(Data, N) ->
   S = [$\s || _ <- lists:seq(1, N)],
   string:replace(Data, "\n", ["\n", S], all).
+
+-spec remove_trailing_whitespaces(iodata()) -> iodata().
+remove_trailing_whitespaces(Data) ->
+  re:replace(Data, " +\n", "\n", [global]).
 
 -spec is_reserved_word(binary()) -> boolean().
 is_reserved_word(Word) ->
