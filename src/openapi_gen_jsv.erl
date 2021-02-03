@@ -77,8 +77,17 @@ generate_jsv_definition(_Schema = #{'$ref' := Pointer}, _Options) ->
   throw({error, {invalid_schema_ref, json_pointer:serialize(Pointer)}});
 generate_jsv_definition(_Schema = #{type := null}, _Options) ->
   "null";
-generate_jsv_definition(_Schema = #{type := string}, _Options) ->
-  "string";
+generate_jsv_definition(Schema = #{type := string}, _Options) ->
+  case maps:find(format, Schema) of
+    {ok, <<"date">>} ->
+      "date";
+    {ok, <<"date-time">>} ->
+      "datetime";
+    {ok, _} ->
+      "string";
+    error ->
+      "string"
+  end;
 generate_jsv_definition(_Schema = #{type := number}, _Options) ->
   "number";
 generate_jsv_definition(_Schema = #{type := integer}, _Options) ->

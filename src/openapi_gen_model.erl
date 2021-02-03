@@ -65,8 +65,17 @@ generate_type(Schema = #{type := Types}, Options) when is_list(Types) ->
   generate_type_union([Schema#{type => Type} || Type <- Types], Options);
 generate_type(_Schema = #{type := null}, _Options) ->
   "null";
-generate_type(_Schema = #{type := string}, _Options) ->
-  "binary()";
+generate_type(Schema = #{type := string}, _Options) ->
+  case maps:find(format, Schema) of
+    {ok, <<"date">>} ->
+      "calendar:date()";
+    {ok, <<"date-time">>} ->
+      "calendar:datetime()";
+    {ok, _} ->
+      "binary()";
+    error ->
+      "binary()"
+  end;
 generate_type(_Schema = #{type := number}, _Options) ->
   "number()";
 generate_type(_Schema = #{type := integer}, _Options) ->
