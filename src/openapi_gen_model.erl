@@ -45,7 +45,8 @@ do_generate(Spec = #{definitions := Definitions}, Options) ->
                                   openapi_gen:options()) ->
         openapi_gen:type().
 generate_definition_id_type(#{definitions := Definitions}, Options) ->
-  Names = [definition_name(N, Options) || N <- maps:keys(Definitions)],
+  Names0 = [definition_name(N, Options) || N <- maps:keys(Definitions)],
+  Names = lists:sort(Names0),
   [FirstName | OtherNames] = Names,
   Data = [["    ", FirstName, "\n| "], lists:join(" \n| ", OtherNames)],
   #{name => <<"definition_id">>,
