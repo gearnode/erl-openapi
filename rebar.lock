@@ -16,7 +16,7 @@
   1},
  {<<"uri">>,
   {git,"https://github.com/galdor/erl-uri.git",
-       {ref,"00b8f36ec63a49b89ca0b202bbf70f364208e8d6"}},
+       {ref,"aa029e922fa5ad08c0fa9f37968317916a0443b9"}},
   0},
  {<<"uuid">>,
   {git,"https://github.com/galdor/erl-uuid.git",
