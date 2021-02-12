@@ -34,17 +34,29 @@ do_generate(Spec = #{definitions := Definitions}, Options) ->
   Types = lists:sort(fun (#{name := T1Name}, #{name := T2Name}) ->
                          T1Name =< T2Name
                      end, Types0),
+  ModelIdType = generate_model_id_type(Spec, Options),
+  AllTypes = [ModelIdType | Types],
   [openapi_gen:header(),
    openapi_gen:module_declaration(ModuleName), $\n,
-   openapi_gen:export_type_declaration([Type || Type <- Types]), $\n,
-   lists:join($\n, [openapi_gen:type_declaration(Type) || Type <- Types])].
+   openapi_gen:export_type_declaration([Type || Type <- AllTypes]), $\n,
+   lists:join($\n, [openapi_gen:type_declaration(Type) || Type <- AllTypes])].
+
+-spec generate_model_id_type(openapi:specification(), openapi_gen:options()) ->
+        openapi_gen:type().
+generate_model_id_type(#{definitions := Definitions}, Options) ->
+  Names = [definition_name(N, Options) || N <- maps:keys(Definitions)],
+  [FirstName | OtherNames] = Names,
+  Data = [["    ", FirstName, "\n| "], lists:join(" \n| ", OtherNames)],
+  #{name => <<"definition_id">>,
+    args => [],
+    data => Data}.
 
 -spec generate_model(DefinitionName :: binary(),
                      openapi:schema(), openapi:specification(),
                      openapi_gen:options()) ->
         openapi_gen:type().
 generate_model(DefinitionName, Schema, _Spec, Options) ->
-  Name = openapi_gen:name(DefinitionName, Options),
+  Name = definition_name(DefinitionName, Options),
   Desc = case maps:find(description, Schema) of
            {ok, String} -> ["\n\n", String];
            error -> []
@@ -57,7 +69,7 @@ generate_model(DefinitionName, Schema, _Spec, Options) ->
 -spec generate_type(openapi:schema(), openapi_gen:options()) -> iodata().
 generate_type(_Schema = #{'$ref' := [<<"definitions">>, DefName]}, Options) ->
   ModuleName = [maps:get(module_prefix, Options, ""), "model"],
-  Name = openapi_gen:name(DefName, Options),
+  Name = definition_name(DefName, Options),
   [ModuleName, $:, Name, "()"];
 generate_type(_Schema = #{'$ref' := Pointer}, _Options) ->
   throw({error, {invalid_schema_ref, json_pointer:serialize(Pointer)}});
@@ -124,3 +136,12 @@ generate_type(_Schema, _Options) ->
         iodata().
 generate_type_union(Schemas, Options) ->
   lists:join("\n| ", [generate_type(S, Options) || S <- Schemas]).
+
+-spec definition_name(binary(), openapi_gen:options()) -> binary().
+definition_name(DefName, Options) ->
+  case openapi_gen:name(DefName, Options) of
+    <<"definition_id">> ->
+      <<"definition_id_">>;
+    Name ->
+      Name
+  end.
