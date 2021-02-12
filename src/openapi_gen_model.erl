@@ -34,16 +34,17 @@ do_generate(Spec = #{definitions := Definitions}, Options) ->
   Types = lists:sort(fun (#{name := T1Name}, #{name := T2Name}) ->
                          T1Name =< T2Name
                      end, Types0),
-  ModelIdType = generate_model_id_type(Spec, Options),
-  AllTypes = [ModelIdType | Types],
+  DefinitionIdType = generate_definition_id_type(Spec, Options),
+  AllTypes = [DefinitionIdType | Types],
   [openapi_gen:header(),
    openapi_gen:module_declaration(ModuleName), $\n,
    openapi_gen:export_type_declaration([Type || Type <- AllTypes]), $\n,
    lists:join($\n, [openapi_gen:type_declaration(Type) || Type <- AllTypes])].
 
--spec generate_model_id_type(openapi:specification(), openapi_gen:options()) ->
+-spec generate_definition_id_type(openapi:specification(),
+                                  openapi_gen:options()) ->
         openapi_gen:type().
-generate_model_id_type(#{definitions := Definitions}, Options) ->
+generate_definition_id_type(#{definitions := Definitions}, Options) ->
   Names = [definition_name(N, Options) || N <- maps:keys(Definitions)],
   [FirstName | OtherNames] = Names,
   Data = [["    ", FirstName, "\n| "], lists:join(" \n| ", OtherNames)],
