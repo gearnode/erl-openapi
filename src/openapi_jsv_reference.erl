@@ -2,9 +2,9 @@
 
 -behaviour(jsv_type).
 
--export([validate_type/1, canonicalize/3, generate/2]).
+-export([validate_type/2, canonicalize/3, generate/2]).
 
-validate_type(Value) when is_binary(Value) ->
+validate_type(Value, _) when is_binary(Value) ->
   case uri:parse(Value) of
     {ok, URI} ->
       Fragment = uri:fragment(URI),
@@ -12,9 +12,9 @@ validate_type(Value) when is_binary(Value) ->
         {ok, Pointer} ->
           case maps:is_key(host, URI) of
             true ->
-              {ok, {maps:without([fragment], URI), Pointer}};
+              {ok, Value, {maps:without([fragment], URI), Pointer}};
             false ->
-              {ok, Pointer}
+              {ok, Value, Pointer}
           end;
         {error, _} ->
           error
@@ -22,7 +22,7 @@ validate_type(Value) when is_binary(Value) ->
     {error, _} ->
       error
   end;
-validate_type(_) ->
+validate_type(_, _) ->
   error.
 
 canonicalize(_, Ref, _) ->
