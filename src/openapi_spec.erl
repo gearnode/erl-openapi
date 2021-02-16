@@ -26,7 +26,7 @@ read(Data) ->
         {ok, openapi:specification()} | {error, openapi:error_reason()}.
 read_value(Value) ->
   Options = #{type_map => openapi_jsv:type_map(),
-              invalid_member_handling => keep,
+              unknown_member_handling => keep,
               format_value_errors => true},
   case jsv:validate(Value, {ref, openapi, specification}, Options) of
     {ok, Spec} ->
