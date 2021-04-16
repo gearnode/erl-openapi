@@ -306,4 +306,4 @@ external_documentation_definition() ->
        #{description => string,
          url => uri},
      required =>
-       [uri]}}.
+       [url]}}.
