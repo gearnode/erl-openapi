@@ -85,6 +85,8 @@ generate_type(Schema = #{type := string}, _Options) ->
       "calendar:date()";
     {ok, <<"date-time">>} ->
       "calendar:datetime()";
+    {ok, <<"int-or-string">>} ->
+      "integer() | binary()";
     {ok, _} ->
       "binary()";
     error ->

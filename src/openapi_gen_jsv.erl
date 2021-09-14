@@ -83,6 +83,8 @@ generate_jsv_definition(Schema = #{type := string}, _Options) ->
       "date";
     {ok, <<"date-time">>} ->
       "datetime";
+    {ok, <<"int-or-string">>} ->
+      "{one_of, [integer, string]}";
     {ok, _} ->
       "string";
     error ->
