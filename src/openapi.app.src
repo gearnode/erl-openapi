@@ -21,7 +21,6 @@
    [kernel,
     stdlib,
     syntax_tools,
-    et,
     uri,
     json,
     jsv]},
