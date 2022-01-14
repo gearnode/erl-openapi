@@ -189,9 +189,7 @@ operation_definition() ->
             #{element =>
                 {one_of, [{ref, parameter}, {ref, reference}]}}},
          requestBody =>
-           {array,
-            #{element =>
-                {one_of, [{ref, request_body}, {ref, reference}]}}},
+           {one_of, [{ref, request_body}, {ref, reference}]},
          responses =>
            {object,
             #{value =>
