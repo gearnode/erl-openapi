@@ -19,15 +19,29 @@
 -export([start/2, stop/1]).
 
 start(_StartType, _Args) ->
-  jsv:register_catalog(openapi, openapi_jsv:catalog()),
   Options = #{type_map => openapi_jsv:type_map()},
-  case jsv:verify_catalog(openapi, Options) of
-    ok ->
-      openapi_sup:start_link();
-    {error, Reason} ->
-      {error, {invalid_jsv_catalog, Reason, openapi}}
+  F =
+    fun (Name, Catalog) ->
+        jsv:register_catalog(Name, Catalog),
+        case jsv:verify_catalog(Name, Options) of
+          ok ->
+            ok;
+          {error, Reason} ->
+            throw({error, {invalid_jsv_catalog, Reason, Catalog}})
+        end
+    end,
+  try
+    maps:foreach(F, jsv_catalogs()),
+    openapi_sup:start_link()
+  catch
+    throw:{error, Reason} ->
+      {error, Reason}
   end.
 
 stop(_State) ->
-  jsv:unregister_catalog(openapi),
+  lists:foreach(fun jsv:unregister_catalog/1, maps:keys(jsv_catalogs())),
   ok.
+
+jsv_catalogs() ->
+  #{openapi_v2 => openapi_v2_jsv:catalog(),
+    openapi_v3 => openapi_v3_jsv:catalog()}.

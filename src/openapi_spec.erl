@@ -42,7 +42,7 @@ read_value(Value) ->
   Options = #{type_map => openapi_jsv:type_map(),
               unknown_member_handling => keep,
               format_value_errors => true},
-  case jsv:validate(Value, {ref, openapi, specification}, Options) of
+  case jsv:validate(Value, {ref, openapi_v2, specification}, Options) of
     {ok, Spec} ->
       {ok, Spec};
     {error, Errors} ->

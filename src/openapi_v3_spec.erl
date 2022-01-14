@@ -39,7 +39,7 @@ read(Data) ->
 -spec read_value(json:value()) ->
         {ok, openapi_v3:specification()} | {error, openapi_v3:error_reason()}.
 read_value(Value) ->
-  Options = #{type_map => openapi_v3_jsv:type_map(),
+  Options = #{type_map => openapi_jsv:type_map(),
               unknown_member_handling => keep,
               format_value_errors => true},
   case jsv:validate(Value, {ref, openapi_v3, specification}, Options) of
