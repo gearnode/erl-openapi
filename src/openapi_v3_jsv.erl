@@ -14,12 +14,7 @@
 
 -module(openapi_v3_jsv).
 
--export([type_map/0, catalog/0]).
-
--spec type_map() -> jsv:type_map().
-type_map() ->
-  maps:merge(jsv:default_type_map(),
-             #{reference => openapi_jsv_reference}).
+-export([catalog/0]).
 
 -spec catalog() -> jsv:catalog().
 catalog() ->
