@@ -439,7 +439,7 @@ security_scheme_definition() ->
        #{type => string,
          description => string,
          name => string,
-         in => string,
+         in => {string, #{values => [query, header, cookie]}},
          scheme => string,
          bearerFormat => string,
          flows => {ref, oauth_flows},
