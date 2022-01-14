@@ -20,18 +20,13 @@
 
 -export_type([error_reason/0,
               specification/0,
-              info/0,
-              contact/0,
-              license/0,
-              server/0,
-              server_variable/0,
+              info/0, contact/0, license/0,
+              server/0, server_variable/0,
               components/0,
               path/0,
               operation/0,
               external_documentation/0,
-              parameter/0,
-              parameter_location/0,
-              parameter_style/0,
+              parameter/0, parameter_location/0, parameter_style/0,
               request_body/0,
               media_type/0,
               encoding/0,
@@ -40,15 +35,12 @@
               example/0,
               links/0,
               tag/0,
-              ref/0,
               schema/0,
               discriminator/0,
               xml/0,
-              security_scheme/0,
-              security_scheme_location/0,
-              oauth2_flows/0,
-              oauth2_flow/0,
-              security_requirement/0]).
+              security_scheme/0, security_scheme_location/0,
+              security_requirement/0,
+              oauth2_flows/0, oauth2_flow/0]).
 
 -type error_reason() ::
         {file_error, term(), file:name_all()}
@@ -96,16 +88,16 @@
           description => binary()}.
 
 -type components() ::
-        #{schemas => #{binary() := schema() | ref()},
-          responses => #{binary() := response() | ref()},
-          parameters => #{binary() := parameter() | ref()},
-          examples => #{binary() := example() | ref()},
-          requestBodies => #{binary() := request_body() | ref()},
-          headers => #{binary() := header() | ref()},
+        #{schemas => #{binary() := schema() | openapi:ref()},
+          responses => #{binary() := response() | openapi:ref()},
+          parameters => #{binary() := parameter() | openapi:ref()},
+          examples => #{binary() := example() | openapi:ref()},
+          requestBodies => #{binary() := request_body() | openapi:ref()},
+          headers => #{binary() := header() | openapi:ref()},
           securitySchemes =>
-            #{binary() := security_scheme() | ref()},
-          links => #{binary() := links() | ref()},
-          callbacks => #{binary() := callback() | ref()}}.
+            #{binary() := security_scheme() | openapi:ref()},
+          links => #{binary() := links() | openapi:ref()},
+          callbacks => #{binary() := callback() | openapi:ref()}}.
 
 -type header() ::
         #{description => binary(),
@@ -117,12 +109,12 @@
           allowReserved => boolean(),
           schema => schema(),
           example => json:value(),
-          examples => #{binary() := example() | ref()},
+          examples => #{binary() := example() | openapi:ref()},
           content => #{binary() := media_type()},
-          '$ref' => ref()}.
+          '$ref' => openapi:ref()}.
 
 -type path() ::
-        #{'$ref' => ref(),
+        #{'$ref' => openapi:ref(),
           summary => binary(),
           description => binary(),
           get => operation(),
@@ -134,7 +126,7 @@
           patch => operation(),
           trace => operation(),
           servers => [server()],
-          parameters => [parameter() | ref()]}.
+          parameters => [parameter() | openapi:ref()]}.
 
 -type operation() ::
         #{tags => [binary()],
@@ -142,10 +134,10 @@
           description => binary(),
           externalDocs => external_documentation(),
           operationId => binary(),
-          parameters => [parameter() | ref()],
-          requestBody => request_body() | ref(),
-          responses := response() | ref(),
-          callbacks => #{binary() := callback() | ref()},
+          parameters => [parameter() | openapi:ref()],
+          requestBody => request_body() | openapi:ref(),
+          responses := response() | openapi:ref(),
+          callbacks => #{binary() := callback() | openapi:ref()},
           deprecated => boolean(),
           security => [security_requirement()],
           server => [server()]}.
@@ -166,7 +158,7 @@
           allowReserved => boolean(),
           schema => schema(),
           example => json:value(),
-          examples => #{binary() := example() | ref()},
+          examples => #{binary() := example() | openapi:ref()},
           content => #{binary() := media_type()}}.
 
 -type parameter_location() ::
@@ -187,23 +179,23 @@
           required => boolean()}.
 
 -type media_type() ::
-        #{schema => schema() | ref(),
+        #{schema => schema() | openapi:ref(),
           example => json:value(),
-          examples => #{binary() := example() | ref()},
+          examples => #{binary() := example() | openapi:ref()},
           encoding => #{binary() := encoding()}}.
 
 -type encoding() ::
         #{contentType => binary(),
-          headers => #{binary() := header() | ref()},
+          headers => #{binary() := header() | openapi:ref()},
           style => binary(),
           explode => boolean(),
           allowReserved => boolean()}.
 
 -type response() ::
         #{description => binary(),
-         headers => #{binary() := header() | ref()},
+         headers => #{binary() := header() | openapi:ref()},
          content => #{binary() := media_type()},
-         links => #{binary() := links() | ref()}}.
+         links => #{binary() := links() | openapi:ref()}}.
 
 -type callback() ::
         #{binary() := path()}.
@@ -226,10 +218,6 @@
         #{name := binary(),
           description => binary(),
           externalDocs => external_documentation()}.
-
--type ref() ::
-        #{'$ref' := json_pointer:pointer() | {URI :: binary(), json_pointer:pointer()}}.
-
 
 -type schema() ::
         #{title => binary(),

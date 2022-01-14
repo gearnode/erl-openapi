@@ -22,7 +22,7 @@
 module_name(Options) ->
   <<(maps:get(module_prefix, Options, <<>>))/binary, "api">>.
 
--spec generate(openapi:specification(), openapi_gen:options()) ->
+-spec generate(openapi_v2:specification(), openapi_gen:options()) ->
         {ok, iodata()} | {error, openapi:error_reason()}.
 generate(Spec, Options) ->
   try
@@ -39,7 +39,7 @@ generate(Spec, Options) ->
       {error, Reason}
   end.
 
--spec do_generate(openapi:specification(), openapi_gen:options()) -> iodata().
+-spec do_generate(openapi_v2:specification(), openapi_gen:options()) -> iodata().
 do_generate(Spec = #{paths := Paths}, Options) ->
   Ops0 = generate_paths_operations(Paths, Spec, Options),
   Ops = lists:sort(fun ({Name1, _, _}, {Name2, _, _}) ->
@@ -54,8 +54,8 @@ do_generate(Spec = #{paths := Paths}, Options) ->
    openapi_gen:export_type_declaration(Types), $\n,
    lists:join($\n, [Data || {_, Data, _} <- Ops])].
 
--spec generate_paths_operations(#{binary() := openapi:path()},
-                                openapi:specification(),
+-spec generate_paths_operations(#{binary() := openapi_v2:path()},
+                                openapi_v2:specification(),
                                 openapi_gen:options()) ->
         [{binary(), iodata(), openapi_gen:type()}].
 generate_paths_operations(Paths, Spec, Options) ->
@@ -63,8 +63,8 @@ generate_paths_operations(Paths, Spec, Options) ->
                 Acc ++ generate_path_operations(URI, Path, Spec, Options)
             end, [], Paths).
 
--spec generate_path_operations(binary(), openapi:path(),
-                               openapi:specification(),
+-spec generate_path_operations(binary(), openapi_v2:path(),
+                               openapi_v2:specification(),
                                openapi_gen:options()) ->
         [{binary(), iodata(), openapi_gen:type()}].
 generate_path_operations(URI, Path, Spec, Options) ->
@@ -74,9 +74,9 @@ generate_path_operations(URI, Path, Spec, Options) ->
                                     Options) | Acc]
             end, [], maps:with(Methods, Path)).
 
--spec generate_operation(atom(), openapi:operation(),
-                         binary(), openapi:path(),
-                         openapi:specification(), openapi_gen:options()) ->
+-spec generate_operation(atom(), openapi_v2:operation(),
+                         binary(), openapi_v2:path(),
+                         openapi_v2:specification(), openapi_gen:options()) ->
         {FunName :: binary(), iodata(), openapi_gen:type()}.
 generate_operation(Method, Op = #{operationId := Id}, URI, _Path, _Spec,
                    Options) ->
@@ -103,7 +103,7 @@ generate_operation(Method, Op = #{operationId := Id}, URI, _Path, _Spec,
   {Name, Data, OutputType}.
 
 -spec generate_operation_output_type(OpName :: binary(),
-                                     openapi:operation()) ->
+                                     openapi_v2:operation()) ->
         openapi_gen:type().
 generate_operation_output_type(OpName, #{responses := Responses}) ->
   DefaultType =
@@ -129,7 +129,7 @@ generate_operation_output_type(OpName, #{responses := Responses}) ->
   #{name => <<OpName/binary, "_output">>,
     data => lists:join(" |\n", Types ++ [DefaultType])}.
 
--spec generate_operation_comment(openapi:operation(), binary(), atom()) ->
+-spec generate_operation_comment(openapi_v2:operation(), binary(), atom()) ->
         iodata().
 generate_operation_comment(Op, URI, Method) ->
   IdData =

@@ -12,12 +12,12 @@
 %% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
 %% IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
--module(openapi_spec).
+-module(openapi_v2_spec).
 
 -export([read_file/1, read/1, read_value/1]).
 
 -spec read_file(file:name_all()) ->
-        {ok, openapi:specification()} | {error, openapi:error_reason()}.
+        {ok, openapi_v2:specification()} | {error, openapi_v2:error_reason()}.
 read_file(Path) ->
   case file:read_file(Path) of
     {ok, Data} ->
@@ -27,7 +27,7 @@ read_file(Path) ->
   end.
 
 -spec read(binary()) ->
-        {ok, openapi:specification()} | {error, openapi:error_reason()}.
+        {ok, openapi_v2:specification()} | {error, openapi_v2:error_reason()}.
 read(Data) ->
   case json:parse(Data) of
     {ok, Value} ->
@@ -37,7 +37,7 @@ read(Data) ->
   end.
 
 -spec read_value(json:value()) ->
-        {ok, openapi:specification()} | {error, openapi:error_reason()}.
+        {ok, openapi_v2:specification()} | {error, openapi_v2:error_reason()}.
 read_value(Value) ->
   Options = #{type_map => openapi_jsv:type_map(),
               unknown_member_handling => keep,
