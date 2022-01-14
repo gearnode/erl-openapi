@@ -370,7 +370,7 @@ schema_definition() ->
          uniqueItems => boolean,
          maxProperties => {number, #{min => 0}},
          minProperties => {number, #{min => 0}},
-         required => boolean,
+         required => {array, #{element => string, min_length => 1}},
          enum =>
            {array,
             #{element => any, unique_elements => true, min_length => 1}},
