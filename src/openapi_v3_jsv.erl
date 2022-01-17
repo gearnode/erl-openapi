@@ -120,39 +120,39 @@ component_definition() ->
        #{schemas =>
            {object,
             #{value =>
-                {one_of, [{ref, schema}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, schema}]}}},
          responses =>
            {object,
             #{value =>
-                {one_of, [{ref, response}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, response}]}}},
          parameters =>
            {object,
             #{value =>
-                {one_of, [{ref, parameter}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, parameter}]}}},
          examples =>
            {object,
             #{value =>
-                {one_of, [{ref, example}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, example}]}}},
          requestBodies =>
            {object,
             #{value =>
-                {one_of, [{ref, request_body}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, request_body}]}}},
          headers =>
            {object,
             #{value =>
-                {one_of, [{ref, header}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, header}]}}},
           securitySchemes =>
            {object,
             #{value =>
-                {one_of, [{ref, security_scheme}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, security_scheme}]}}},
          links =>
            {object,
             #{value =>
-                {one_of, [{ref, link}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, link}]}}},
          callbacks =>
            {object,
             #{value =>
-                {one_of, [{ref, callback}, {ref, reference}]}}}}}}.
+                {one_of, [{ref, reference}, {ref, callback}]}}}}}}.
 
 -spec path_definition() -> jsv:definition().
 path_definition() ->
@@ -173,7 +173,7 @@ path_definition() ->
          parameters =>
            {array,
             #{element =>
-                {one_of, [{ref, parameter}, {ref, reference}]}}}}}}.
+                {one_of, [{ref, reference}, {ref, parameter}]}}}}}}.
 
 -spec operation_definition() -> jsv:definition().
 operation_definition() ->
@@ -187,17 +187,17 @@ operation_definition() ->
          parameters =>
            {array,
             #{element =>
-                {one_of, [{ref, parameter}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, parameter}]}}},
          requestBody =>
-           {one_of, [{ref, request_body}, {ref, reference}]},
+           {one_of, [{ref, reference}, {ref, request_body}]},
          responses =>
            {object,
             #{value =>
-                {one_of, [{ref, response}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, response}]}}},
          callbacks =>
            {object,
             #{value =>
-                {one_of, [{ref, callback}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, callback}]}}},
          deprecated => boolean,
          security =>
            {array, #{element => {ref, security_requirement}}},
@@ -228,12 +228,12 @@ parameter_definition() ->
          style => {ref, style},
          explode => boolean,
          allowReserved => boolean,
-         schema => {one_of, [{ref, schema}, {ref, reference}]},
+         schema => {one_of, [{ref, reference}, {ref, schema}]},
          example => any,
          examples =>
            {object,
             #{value =>
-                {one_of, [{ref, example}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, example}]}}},
          content =>
            {object,
             #{value =>
@@ -263,12 +263,12 @@ request_body_definition() ->
 media_type_definition() ->
   {object,
    #{members =>
-       #{schema => {one_of, [{ref, schema}, {ref, reference}]},
+       #{schema => {one_of, [{ref, reference}, {ref, schema}]},
          example => any,
          examples =>
            {object,
             #{value =>
-                {one_of, [{ref, example}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, example}]}}},
          encoding =>
            {object,
             #{value =>
@@ -282,7 +282,7 @@ encoding_definition() ->
          header =>
            {object,
             #{value =>
-                {one_of, [{ref, header}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, header}]}}},
          style => string,
          explode => boolean,
          allowReserved => boolean}}}.
@@ -294,13 +294,13 @@ response_definition() ->
        #{description => string,
          headers =>
            {object,
-            #{value => {one_of, [{ref, header}, {ref, reference}]}}},
+            #{value => {one_of, [{ref, reference}, {ref, header}]}}},
          content =>
            {object,
             #{value => {ref, media_type}}},
          links =>
            {object,
-            #{value => {one_of, [{ref, link}, {ref, reference}]}}}}}}.
+            #{value => {one_of, [{ref, reference}, {ref, link}]}}}}}}.
 
 -spec callback_definition() -> jsv:definition().
 callback_definition() ->
@@ -343,12 +343,12 @@ header_definition() ->
          style => {ref, style},
          explode => boolean,
          allowReserved => boolean,
-         schema => {one_of, [{ref, schema}, {ref, reference}]},
+         schema => {one_of, [{ref, reference}, {ref, schema}]},
          example => any,
          examples =>
            {object,
             #{value =>
-                {one_of, [{ref, example}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, example}]}}},
          content =>
            {object,
             #{value =>
@@ -398,21 +398,21 @@ schema_definition() ->
          allOf =>
            {array,
             #{element =>
-                {one_of, [{ref, schema}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, schema}]}}},
          oneOf =>
            {array,
             #{element =>
-                {one_of, [{ref, schema}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, schema}]}}},
          anyOf =>
            {array,
             #{element =>
-                {one_of, [{ref, schema}, {ref, reference}]}}},
-         'not' => {one_of, [{ref, schema}, {ref, reference}]},
-         items => {one_of, [{ref, schema}, {ref, reference}]},
+                {one_of, [{ref, reference}, {ref, schema}]}}},
+         'not' => {one_of, [{ref, reference}, {ref, schema}]},
+         items => {one_of, [{ref, reference}, {ref, schema}]},
          properties =>
            {object,
             #{value =>
-                {one_of, [{ref, schema}, {ref, reference}]}}},
+                {one_of, [{ref, reference}, {ref, schema}]}}},
          description => string,
          format => string,
          default => any,
