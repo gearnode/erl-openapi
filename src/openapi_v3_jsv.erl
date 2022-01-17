@@ -56,7 +56,7 @@ specification_definition() ->
          info => {ref, info},
          servers => {array, #{element => {ref, server}}},
          paths => {object, #{value => {ref, path}}},
-         components => {object, #{value => {ref, component}}},
+         components => {ref, component},
          security => {array, #{element => {ref, security_requirement}}},
          tags => {array, #{element => {ref, tag}}},
          externalDocs => {ref, external_documentation}},
