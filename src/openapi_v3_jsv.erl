@@ -332,7 +332,27 @@ link_definition() ->
 
 -spec header_definition() -> jsv:definition().
 header_definition() ->
-  {ref, parameter}.
+  {object,
+   #{members =>
+       #{name => string,
+         in => {string, #{values => [query, header, path, cookie]}},
+         description => string,
+         required => boolean,
+         deprecated => boolean,
+         allowEmptyValue => boolean,
+         style => {ref, style},
+         explode => boolean,
+         allowReserved => boolean,
+         schema => {one_of, [{ref, schema}, {ref, reference}]},
+         example => any,
+         examples =>
+           {object,
+            #{value =>
+                {one_of, [{ref, example}, {ref, reference}]}}},
+         content =>
+           {object,
+            #{value =>
+                {ref, media_type}}}}}}.
 
 -spec tag_definition() -> jsv:definition().
 tag_definition() ->
