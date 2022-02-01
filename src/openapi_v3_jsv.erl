@@ -458,7 +458,7 @@ security_scheme_definition() ->
          flows => {ref, oauth_flows},
          openIdConnectUrl => string},
      required =>
-       [type, name, in, scheme, flows, openIdConnectUrl]}}.
+       [type]}}.
 
 -spec oauth_flows_definition() -> jsv:definition().
 oauth_flows_definition() ->
