@@ -299,4 +299,12 @@ supported_generator() ->
       #{client => openapi_v3_erlang_client_gen}}.
 
 validate_spec(Data) ->
-  openapi_v3_spec:read_value(Data).
+  Options = #{type_map => openapi_jsv:type_map(),
+              unknown_member_handling => keep,
+              format_value_errors => true},
+  case jsv:validate(Data, {ref, openapi_v3, specification}, Options) of
+    {ok, Spec} ->
+      {ok, Spec};
+        {error, Errors} ->
+      {error, {invalid_specification, Errors}}
+  end.
