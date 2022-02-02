@@ -39,7 +39,7 @@
                openapi:generate_options()) ->
         ok | {error, error_reason()}.
 generate(Mod, Data, OutDir, Options) ->
-  case get_generator(Mod, Options) of
+  case get_generator_module(Mod, Options) of
     {ok, GeneratorMod} ->
       case validate(Data, Mod:definition()) of
         {ok, Spec} ->
@@ -51,9 +51,9 @@ generate(Mod, Data, OutDir, Options) ->
       {error, Reason}
   end.
 
--spec get_generator(module(), openapi:generate_options()) ->
+-spec get_generator_module(module(), openapi:generate_options()) ->
         {ok, module()} | {error, error_reason()}.
-get_generator(Mod, #{language := Language, generator := Generator}) ->
+get_generator_module(Mod, #{language := Language, generator := Generator}) ->
   case maps:find(Language, Mod:supported_generator()) of
     {ok, SupportedGenerators} ->
       case maps:find(Generator, SupportedGenerators) of
