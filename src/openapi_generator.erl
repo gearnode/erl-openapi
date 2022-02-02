@@ -41,9 +41,6 @@
 generate(Mod, Data, OutDir, Options) ->
   Language = maps:get(language, Options),
   Generator = maps:get(generator, Options),
-  JSVOptions = #{type_map => openapi_jsv:type_map(),
-                 unknown_member_handling => keep,
-                 format_value_errors => true},
   case maps:find(Language, Mod:supported_generator()) of
     {ok, SupportedGenerators} ->
       case maps:find(Generator, SupportedGenerators) of
