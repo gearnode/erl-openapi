@@ -14,8 +14,7 @@
 
 -module(openapi_v3).
 
--export([definition/2,
-         generate/3,
+-export([generate/3,
          generate_data/2, generate_data/3]).
 
 -export_type([error_reason/0,
@@ -43,9 +42,7 @@
               oauth2_flows/0, oauth2_flow/0]).
 
 -type error_reason() ::
-        {file_error, term(), file:name_all()}
-      | {invalid_json_data, json:error()}
-      | {invalid_specification, [jsv:value_error()]}
+        {invalid_specification, [jsv:value_error()]}
       | {invalid_unicode_data, unicode:chardata()}
       | {incomplete_unicode_data, unicode:chardata()}
       | {invalid_schema_ref, binary()}
@@ -296,10 +293,6 @@
 
 -type security_requirement() ::
         #{binary() := [binary()]}.
-
--spec definition(binary(), specification()) -> {ok, schema()} | error.
-definition(Name, #{definitions := Definitions}) ->
-  maps:find(Name, Definitions).
 
 -spec generate(Input :: file:name_all(), OutputDir :: file:name_all(),
                openapi_v3_gen:options()) ->

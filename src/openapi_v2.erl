@@ -14,8 +14,7 @@
 
 -module(openapi_v2).
 
--export([definition/2,
-         generate/3,
+-export([generate/3,
          generate_data/2, generate_data/3]).
 
 -export_type([error_reason/0,
@@ -257,10 +256,6 @@
 -type external_documentation() ::
         #{description => binary(),
           url := binary()}.
-
--spec definition(binary(), specification()) -> {ok, schema()} | error.
-definition(Name, #{definitions := Definitions}) ->
-  maps:find(Name, Definitions).
 
 -spec generate(Input :: file:name_all(), OutputDir :: file:name_all(),
                openapi_gen:options()) ->

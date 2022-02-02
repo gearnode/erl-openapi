@@ -14,38 +14,37 @@
 
 -module(openapi_v3_spec).
 
--export([read_file/1, read/1, read_value/1]).
-
--spec read_file(file:name_all()) ->
-        {ok, openapi_v3:specification()} | {error, openapi_v3:error_reason()}.
-read_file(Path) ->
-  case file:read_file(Path) of
-    {ok, Data} ->
-      read(Data);
-    {error, Reason} ->
-      {error, {file_error, Reason, Path}}
-  end.
-
--spec read(binary()) ->
-        {ok, openapi_v3:specification()} | {error, openapi_v3:error_reason()}.
-read(Data) ->
-  case json:parse(Data) of
-    {ok, Value} ->
-      read_value(Value);
-    {error, Error} ->
-      {error, {invalid_json_data, Error}}
-  end.
+-export([read_value/1]).
 
 -spec read_value(json:value()) ->
         {ok, openapi_v3:specification()} | {error, openapi_v3:error_reason()}.
 read_value(Value0) ->
-  Value = inline_references(Value0),
+  Value = Value0,
+  %% Value = inline_references(Value0),
   Options = #{type_map => openapi_jsv:type_map(),
               unknown_member_handling => keep,
               format_value_errors => true},
   case jsv:validate(Value, {ref, openapi_v3, specification}, Options) of
     {ok, Data} ->
-      {ok, Data};
+      {ok, Data},
+      %% io:format("XXX ~p~n", [maps:keys(maps:get(schemas, maps:get(components, Data)))]);
+
+      maps:foreach(fun (K, V) ->
+                       case maps:find(type, V) of
+                         {ok, <<"object">>} ->
+                           io:format("-spec ~s() ::~n", [K]),
+                           X = maps:fold(fun (K2, V2, Acc) ->
+                                             [[K2, "=> binary()"] | Acc]
+                                             %% io:format("~s => binary(),~n", [K2])
+                                         end, [], maps:get(properties, V)),
+                           io:format("#{~s}.~n", [lists:join(",\n", X)]),
+                           %% io:format("~p~n", [maps:get(properties, V)]),
+                           %% io:format("        #{}.~n"),
+                           ok;
+                         error ->
+                           ok
+                       end
+                   end, maps:get(schemas, maps:get(components, Data)));
     {error, Errors} ->
       {error, {invalid_specification, Errors}}
   end.
