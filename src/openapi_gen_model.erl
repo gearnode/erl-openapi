@@ -22,7 +22,7 @@
 module_name(Options) ->
   <<(maps:get(module_prefix, Options, <<>>))/binary, "model">>.
 
--spec generate(openapi:specification(), openapi_gen:options()) ->
+-spec generate(openapi_v2:specification(), openapi_gen:options()) ->
         {ok, iodata()} | {error, openapi:error_reason()}.
 generate(Spec, Options) ->
   try
@@ -39,7 +39,7 @@ generate(Spec, Options) ->
       {error, Reason}
   end.
 
--spec do_generate(openapi:specification(), openapi_gen:options()) -> iodata().
+-spec do_generate(openapi_v2:specification(), openapi_gen:options()) -> iodata().
 do_generate(Spec = #{definitions := Definitions}, Options) ->
   ModuleName = module_name(Options),
   Types0 = maps:fold(fun (Name, Schema, Acc) ->
@@ -55,7 +55,7 @@ do_generate(Spec = #{definitions := Definitions}, Options) ->
    openapi_gen:export_type_declaration([Type || Type <- AllTypes]), $\n,
    lists:join($\n, [openapi_gen:type_declaration(Type) || Type <- AllTypes])].
 
--spec generate_definition_id_type(openapi:specification(),
+-spec generate_definition_id_type(openapi_v2:specification(),
                                   openapi_gen:options()) ->
         openapi_gen:type().
 generate_definition_id_type(#{definitions := Definitions}, Options) ->
@@ -68,7 +68,7 @@ generate_definition_id_type(#{definitions := Definitions}, Options) ->
     data => Data}.
 
 -spec generate_model(DefinitionName :: binary(),
-                     openapi:schema(), openapi:specification(),
+                     openapi_v2:schema(), openapi_v2:specification(),
                      openapi_gen:options()) ->
         openapi_gen:type().
 generate_model(DefinitionName, Schema, _Spec, Options) ->
@@ -82,7 +82,7 @@ generate_model(DefinitionName, Schema, _Spec, Options) ->
     data => generate_type(Schema, Options),
     comment => [DefinitionName, Desc]}.
 
--spec generate_type(openapi:schema(), openapi_gen:options()) -> iodata().
+-spec generate_type(openapi_v2:schema(), openapi_gen:options()) -> iodata().
 generate_type(_Schema = #{'$ref' := [<<"definitions">>, DefName]}, Options) ->
   ModuleName = [maps:get(module_prefix, Options, ""), "model"],
   Name = definition_name(DefName, Options),
@@ -150,7 +150,7 @@ generate_type(Schema = #{type := object}, Options) ->
 generate_type(_Schema, _Options) ->
   "json:value()".
 
--spec generate_type_union([openapi:schema()], openapi_gen:options()) ->
+-spec generate_type_union([openapi_v2:schema()], openapi_gen:options()) ->
         iodata().
 generate_type_union(Schemas, Options) ->
   lists:join("\n| ", [generate_type(S, Options) || S <- Schemas]).

@@ -35,7 +35,7 @@
                   comment => iodata()}.
 
 -callback module_name(options()) -> binary().
--callback generate(openapi:specification(), options()) ->
+-callback generate(openapi_v2:specification(), options()) ->
   {ok, iodata()} | {error, openapi:error_reason()}.
 
 -spec unicode_iolist_to_binary(iolist()) ->

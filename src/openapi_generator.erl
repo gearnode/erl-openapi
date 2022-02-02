@@ -12,11 +12,4 @@
 %% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
 %% IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
--module(openapi_jsv).
-
--export([type_map/0]).
-
--spec type_map() -> jsv:type_map().
-type_map() ->
-  maps:merge(jsv:default_type_map(),
-             #{reference => openapi_jsv_reference}).
+-module(openapi_generator).

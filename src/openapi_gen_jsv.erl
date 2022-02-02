@@ -22,7 +22,7 @@
 module_name(Options) ->
   <<(maps:get(module_prefix, Options, <<>>))/binary, "jsv">>.
 
--spec generate(openapi:specification(), openapi_gen:options()) ->
+-spec generate(openapi_v2:specification(), openapi_gen:options()) ->
         {ok, iodata()} | {error, openapi:error_reason()}.
 generate(Spec, Options) ->
   try
@@ -39,7 +39,7 @@ generate(Spec, Options) ->
       {error, Reason}
   end.
 
--spec do_generate(openapi:specification(), openapi_gen:options()) -> iodata().
+-spec do_generate(openapi_v2:specification(), openapi_gen:options()) -> iodata().
 do_generate(Spec = #{definitions := Definitions}, Options) ->
   ModuleName = module_name(Options),
   [openapi_gen:header(),
@@ -49,7 +49,7 @@ do_generate(Spec = #{definitions := Definitions}, Options) ->
    lists:join($\n, [generate_jsv_definition_fun(Name, Def, Options) ||
                      {Name, Def} <- maps:to_list(Definitions)])].
 
--spec generate_catalog_fun(openapi:specification(), openapi_gen:options()) ->
+-spec generate_catalog_fun(openapi_v2:specification(), openapi_gen:options()) ->
         iodata().
 generate_catalog_fun(#{definitions := Definitions}, Options) ->
   JSVDefs0 = maps:fold(fun (DefName, _Def, Acc) ->
@@ -67,7 +67,7 @@ generate_catalog_fun(#{definitions := Definitions}, Options) ->
    "catalog() ->\n",
    openapi_gen:indent(Body, 2)].
 
--spec generate_jsv_definition_fun(binary(), openapi:schema(),
+-spec generate_jsv_definition_fun(binary(), openapi_v2:schema(),
                                   openapi_gen:options()) -> iodata().
 generate_jsv_definition_fun(DefName, Schema, Options) ->
   Name = openapi_gen:name(DefName, Options),
@@ -81,7 +81,7 @@ generate_jsv_definition_fun(DefName, Schema, Options) ->
    Name, "_definition() ->\n",
    openapi_gen:indent(Body, 2)].
 
--spec generate_jsv_definition(openapi:schema(), openapi_gen:options()) ->
+-spec generate_jsv_definition(openapi_v2:schema(), openapi_gen:options()) ->
         iodata().
 generate_jsv_definition(_Schema = #{'$ref' := [<<"definitions">>, DefName]},
                         Options) ->
@@ -166,7 +166,7 @@ generate_jsv_definition(Schema = #{type := object}, Options) ->
 generate_jsv_definition(_Schema, _Options) ->
   "any".
 
--spec generate_one_of_jsv_definition([openapi:schema()],
+-spec generate_one_of_jsv_definition([openapi_v2:schema()],
                                      openapi_gen:options()) ->
         iodata().
 generate_one_of_jsv_definition(Schemas, Options) ->
