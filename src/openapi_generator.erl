@@ -26,14 +26,14 @@
 -type error_reason() ::
         {unsupported_language, atom()}
       | {unsupported_generator, atom()}
+      | {invalid_specification, [jsv:value_error()]}
       | openapi_v2:error_reason()
       | openapi_v3:error_reason().
 
 -callback supported_generator() ->
   #{atom() := #{atom() := module()}}.
 
--callback validate_spec(json:value()) ->
-  {error, openapi:error_reason()} | {ok, specification()}.
+-callback definition() -> jsv:definition().
 
 -spec generate(module(), json:value(), file:name_all(),
                openapi:generate_options()) ->
@@ -41,16 +41,19 @@
 generate(Mod, Data, OutDir, Options) ->
   Language = maps:get(language, Options),
   Generator = maps:get(generator, Options),
+  JSVOptions = #{type_map => openapi_jsv:type_map(),
+                 unknown_member_handling => keep,
+                 format_value_errors => true},
   case maps:find(Language, Mod:supported_generator()) of
     {ok, SupportedGenerators} ->
       case maps:find(Generator, SupportedGenerators) of
         {ok, GeneratorMod} ->
-          case Mod:validate_spec(Data) of
+          case jsv:validate(Data, Mod:definition(), JSVOptions) of
             {ok, Spec} ->
               openapi_code_generator:generate(GeneratorMod, Spec, OutDir,
                                               Options);
             {error, Reason} ->
-              {error, Reason}
+              {error, {invalid_specification, Reason}}
           end;
         error ->
           {error, {unsupported_generator, Generator}}

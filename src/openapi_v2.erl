@@ -17,7 +17,7 @@
 -behaviour(openapi_generator).
 
 -export([supported_generator/0,
-         validate_spec/1]).
+         definition/0]).
 
 -export_type([error_reason/0,
               specification/0,
@@ -32,8 +32,7 @@
               external_documentation/0]).
 
 -type error_reason() ::
-        {invalid_specification, [jsv:value_error()]}
-      | {invalid_unicode_data, unicode:chardata()}
+        {invalid_unicode_data, unicode:chardata()}
       | {incomplete_unicode_data, unicode:chardata()}
       | {invalid_schema_ref, binary()}
       | {invalid_response_status, binary()}.
@@ -261,16 +260,10 @@ supported_generator() ->
   #{erlang =>
       #{client => openapi_v2_erlang_client_gen}}.
 
-validate_spec(Data) ->
-  Options = #{type_map => openapi_jsv:type_map(),
-              unknown_member_handling => keep,
-              format_value_errors => true},
-  case jsv:validate(Data, {ref, openapi_v2, specification}, Options) of
-    {ok, Spec} ->
-      {ok, Spec};
-    {error, Errors} ->
-      {error, {invalid_specification, Errors}}
-  end.
+definition() ->
+  {ref, openapi_v2, specification}.
+
+
 
 
       %% Mods = [openapi_gen_model,
