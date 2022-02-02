@@ -38,7 +38,7 @@
 -spec generate(module(), json:value(), file:name_all(),
                openapi:generate_options()) ->
         ok | {error, error_reason()}.
-generate(Mod, Data, OutputDir, Options) ->
+generate(Mod, Data, OutDir, Options) ->
   Language = maps:get(language, Options),
   Generator = maps:get(generator, Options),
   case maps:find(Language, Mod:supported_generator()) of
@@ -47,7 +47,8 @@ generate(Mod, Data, OutputDir, Options) ->
         {ok, GeneratorMod} ->
           case Mod:validate_spec(Data) of
             {ok, Spec} ->
-              GeneratorMod:generate(Spec, OutputDir, Options);
+              openapi_code_generator:generate(GeneratorMod, Spec, OutDir,
+                                              Options);
             {error, Reason} ->
               {error, Reason}
           end;
