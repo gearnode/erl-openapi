@@ -30,7 +30,7 @@
       | openapi_v2:error_reason()
       | openapi_v3:error_reason().
 
--callback supported_generator() ->
+-callback supported_generators() ->
   #{atom() := #{atom() := module()}}.
 
 -callback definition() -> jsv:definition().
@@ -54,7 +54,7 @@ generate(Mod, Data, OutDir, Options) ->
 -spec get_generator_module(module(), openapi:generate_options()) ->
         {ok, module()} | {error, error_reason()}.
 get_generator_module(Mod, #{language := Language, generator := Generator}) ->
-  case maps:find(Language, Mod:supported_generator()) of
+  case maps:find(Language, Mod:supported_generators()) of
     {ok, SupportedGenerators} ->
       case maps:find(Generator, SupportedGenerators) of
         {ok, GeneratorMod} ->

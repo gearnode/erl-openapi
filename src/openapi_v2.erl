@@ -16,7 +16,7 @@
 
 -behaviour(openapi_generator).
 
--export([supported_generator/0,
+-export([supported_generators/0,
          definition/0]).
 
 -export_type([error_reason/0,
@@ -256,7 +256,7 @@
         #{description => binary(),
           url := binary()}.
 
-supported_generator() ->
+supported_generators() ->
   #{erlang =>
       #{client => openapi_v2_erlang_client_gen}}.
 

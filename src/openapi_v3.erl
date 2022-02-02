@@ -14,7 +14,7 @@
 
 -module(openapi_v3).
 
--export([supported_generator/0,
+-export([supported_generators/0,
          definition/0]).
 
 -export_type([error_reason/0,
@@ -294,7 +294,7 @@
 -type security_requirement() ::
         #{binary() := [binary()]}.
 
-supported_generator() ->
+supported_generators() ->
   #{erlang =>
       #{client => openapi_v3_erlang_client_gen}}.
 
