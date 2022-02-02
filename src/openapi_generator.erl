@@ -30,8 +30,7 @@
       | openapi_v2:error_reason()
       | openapi_v3:error_reason().
 
--callback supported_generators() ->
-  #{atom() := #{atom() := module()}}.
+-callback supported_generators() -> #{atom() := #{atom() := module()}}.
 
 -callback definition() -> jsv:definition().
 
