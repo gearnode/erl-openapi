@@ -12,19 +12,4 @@
 %% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
 %% IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
--module(openapi_v2_spec).
-
--export([read_value/1]).
-
--spec read_value(json:value()) ->
-        {ok, openapi_v2:specification()} | {error, openapi_v2:error_reason()}.
-read_value(Value) ->
-  Options = #{type_map => openapi_jsv:type_map(),
-              unknown_member_handling => keep,
-              format_value_errors => true},
-  case jsv:validate(Value, {ref, openapi_v2, specification}, Options) of
-    {ok, Spec} ->
-      {ok, Spec};
-    {error, Errors} ->
-      {error, {invalid_specification, Errors}}
-  end.
+-module(openapi_generator).

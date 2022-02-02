@@ -14,8 +14,9 @@
 
 -module(openapi_v2).
 
--export([generate/3,
-         generate_data/2, generate_data/3]).
+-behaviour(openapi_generator).
+
+-export([generate/3]).
 
 -export_type([error_reason/0,
               specification/0,
@@ -30,9 +31,7 @@
               external_documentation/0]).
 
 -type error_reason() ::
-        {file_error, term(), file:name_all()}
-      | {invalid_json_data, json:error()}
-      | {invalid_specification, [jsv:value_error()]}
+        {invalid_specification, [jsv:value_error()]}
       | {invalid_unicode_data, unicode:chardata()}
       | {incomplete_unicode_data, unicode:chardata()}
       | {invalid_schema_ref, binary()}
@@ -257,49 +256,32 @@
         #{description => binary(),
           url := binary()}.
 
--spec generate(Input :: file:name_all(), OutputDir :: file:name_all(),
-               openapi_gen:options()) ->
+-spec generate(json:value(), file:name_all(), openapi:generate_options()) ->
         ok | {error, error_reason()}.
-generate(Input, OutputDir, Options) ->
-  case openapi_v2_spec:read_file(Input) of
+generate(Data, OutputDir, _Options) ->
+  case openapi_v2_spec:read_value(Data) of
     {ok, Spec} ->
-      Mods = [openapi_gen_model,
-              openapi_gen_jsv],
-      Fun = fun
-              F([]) ->
-                ok;
-              F([H | T]) ->
-                case H:generate(Spec, Options) of
-                  {ok, Data} ->
-                    Output0 = [OutputDir, $/, H:module_name(Options), ".erl"],
-                    Output = list_to_binary(Output0),
-                    case file:write_file(Output, Data) of
-                      ok ->
-                        F(T);
-                      {error, Reason} ->
-                        {error, {file_error, Reason, Output}}
-                    end;
-                  {error, Reason} ->
-                    {error, Reason}
-                end
-            end,
-      Fun(Mods);
-    {error, Reason} ->
-      {error, Reason}
-  end.
-
--spec generate_data(module(), Input :: file:name_all()) ->
-        {ok, iodata()} | {error, error_reason()}.
-generate_data(Module, Input) ->
-  generate_data(Module, Input, #{}).
-
--spec generate_data(module(), Input :: file:name_all(),
-                    openapi_gen:options()) ->
-        {ok, iodata()} | {error, error_reason()}.
-generate_data(Module, Input, Options) ->
-  case openapi_v2_spec:read_file(Input) of
-    {ok, Spec} ->
-      Module:generate(Spec, Options);
+      %% Mods = [openapi_gen_model,
+      %%         openapi_gen_jsv],
+      %% Fun = fun
+      %%         F([]) ->
+      %%           ok;
+      %%         F([H | T]) ->
+      %%           case H:generate(Spec, Options) of
+      %%             {ok, Data} ->
+      %%               Output0 = [OutputDir, $/, H:module_name(Options), ".erl"],
+      %%               Output = list_to_binary(Output0),
+      %%               case file:write_file(Output, Data) of
+      %%                 ok ->
+      %%                   F(T);
+      %%                 {error, Reason} ->
+      %%                   {error, {file_error, Reason, Output}}
+      %%               end;
+      %%             {error, Reason} ->
+      %%               {error, Reason}
+      %%           end
+      %%       end,
+      %% Fun(Mods);
     {error, Reason} ->
       {error, Reason}
   end.
