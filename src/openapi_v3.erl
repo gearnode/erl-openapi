@@ -14,8 +14,8 @@
 
 -module(openapi_v3).
 
--export([generate/3,
-         generate_data/2, generate_data/3]).
+-export([supported_generator/0,
+         validate_spec/1]).
 
 -export_type([error_reason/0,
               specification/0,
@@ -294,49 +294,9 @@
 -type security_requirement() ::
         #{binary() := [binary()]}.
 
--spec generate(Input :: file:name_all(), OutputDir :: file:name_all(),
-               openapi_v3_gen:options()) ->
-        ok | {error, openapi_v3:error_reason()}.
-generate(Input, OutputDir, Options) ->
-  case openapi_v3_spec:read_file(Input) of
-    {ok, Spec} ->
-      Mods = [openapi_v3_gen_model,
-              openapi_v3_gen_jsv],
-      Fun = fun
-              F([]) ->
-                ok;
-              F([H | T]) ->
-                case H:generate(Spec, Options) of
-                  {ok, Data} ->
-                    Output0 = [OutputDir, $/, H:module_name(Options), ".erl"],
-                    Output = list_to_binary(Output0),
-                    case file:write_file(Output, Data) of
-                      ok ->
-                        F(T);
-                      {error, Reason} ->
-                        {error, {file_error, Reason, Output}}
-                    end;
-                  {error, Reason} ->
-                    {error, Reason}
-                end
-            end,
-      Fun(Mods);
-    {error, Reason} ->
-      {error, Reason}
-  end.
+supported_generator() ->
+  #{erlang =>
+      #{client => openapi_v3_erlang_client_gen}}.
 
--spec generate_data(module(), Input :: file:name_all()) ->
-        {ok, iodata()} | {error, openapi_v3:error_reason()}.
-generate_data(Module, Input) ->
-  generate_data(Module, Input, #{}).
-
--spec generate_data(module(), Input :: file:name_all(),
-                    openapi_v3_gen:options()) ->
-        {ok, iodata()} | {error, openapi_v3:error_reason()}.
-generate_data(Module, Input, Options) ->
-  case openapi_v3_spec:read_file(Input) of
-    {ok, Spec} ->
-      Module:generate(Spec, Options);
-    {error, Reason} ->
-      {error, Reason}
-  end.
+validate_spec(Data) ->
+  openapi_v3_spec:read_value(Data).

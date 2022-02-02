@@ -13,3 +13,47 @@
 %% IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 -module(openapi_generator).
+
+-export_type([specification/0,
+              error_reason/0]).
+
+-export([generate/4]).
+
+-type specification() ::
+        openapi_v2:specification()
+      | openapi_v3:specification().
+
+-type error_reason() ::
+        {unsupported_language, atom()}
+      | {unsupported_generator, atom()}
+      | openapi_v2:error_reason()
+      | openapi_v3:error_reason().
+
+-callback supported_generator() ->
+  #{atom() := #{atom() := module()}}.
+
+-callback validate_spec(json:value()) ->
+  {error, openapi:error_reason()} | {ok, specification()}.
+
+-spec generate(module(), json:value(), file:name_all(),
+               openapi:generate_options()) ->
+        ok | {error, error_reason()}.
+generate(Mod, Data, OutputDir, Options) ->
+  Language = maps:get(language, Options),
+  Generator = maps:get(generator, Options),
+  case maps:find(Language, Mod:supported_generator()) of
+    {ok, SupportedGenerators} ->
+      case maps:find(Generator, SupportedGenerators) of
+        {ok, GeneratorMod} ->
+          case Mod:validate_spec(Data) of
+            {ok, Spec} ->
+              GeneratorMod:generate(Spec, OutputDir, Options);
+            {error, Reason} ->
+              {error, Reason}
+          end;
+        error ->
+          {error, {unsupported_generator, Generator}}
+      end;
+    error ->
+      {error, {unsupported_language, Language}}
+  end.

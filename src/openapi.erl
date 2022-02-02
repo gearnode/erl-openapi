@@ -16,27 +16,21 @@
 
 -export([generate/3]).
 
--export_type([generator_name/0, generator_type/0,
-              generate_options/0,
+-export_type([generate_options/0,
               error_reason/0,
               ref/0]).
 
 -type error_reason() ::
-        openapi_v2:error_reason()
-      | openapi_v3:error_reason()
-      | {file_error, term(), file:name_all()}
-      | {invalid_json_data, json:error()}.
+        {file_error, term(), file:name_all()}
+      | {invalid_json_data, json:error()}
+      | openapi_generator:error_reason().
 
 -type ref() ::
         json_pointer:pointer() | {URI :: binary(), json_pointer:pointer()}.
 
--type generator_name() :: erlang.
-
--type generator_type() :: client.
-
 -type generate_options() ::
-        #{generator_name := generator_name(),
-          generator_type := generator_type(),
+        #{language := atom(),
+          generator := atom(),
           package_name := binary(),
           model_package => binary(),
           model_name_suffix => binary(),
@@ -54,9 +48,9 @@ generate(Filename, OutDir, Options) ->
         {ok, Data} ->
           case maps:is_key(<<"swagger">>, Data) of
             true ->
-              openapi_v2:generate(Data, OutDir, Options);
+              openapi_generator:generate(openapi_v2, Data, OutDir, Options);
             false ->
-              openapi_v3:generate(Data, OutDir, Options)
+              openapi_generator:generate(openapi_v3, Data, OutDir, Options)
           end;
         {error, Reason} ->
           {error, {invalid_json_data, Reason}}

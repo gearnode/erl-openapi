@@ -16,7 +16,8 @@
 
 -behaviour(openapi_generator).
 
--export([generate/3]).
+-export([supported_generator/0,
+         validate_spec/1]).
 
 -export_type([error_reason/0,
               specification/0,
@@ -256,11 +257,14 @@
         #{description => binary(),
           url := binary()}.
 
--spec generate(json:value(), file:name_all(), openapi:generate_options()) ->
-        ok | {error, error_reason()}.
-generate(Data, OutputDir, _Options) ->
-  case openapi_v2_spec:read_value(Data) of
-    {ok, Spec} ->
+supported_generator() ->
+  #{erlang =>
+      #{client => openapi_v2_erlang_client_gen}}.
+
+validate_spec(Data) ->
+  openapi_v2_spec:read_value(Data).
+
+
       %% Mods = [openapi_gen_model,
       %%         openapi_gen_jsv],
       %% Fun = fun
@@ -282,6 +286,3 @@ generate(Data, OutputDir, _Options) ->
       %%           end
       %%       end,
       %% Fun(Mods);
-    {error, Reason} ->
-      {error, Reason}
-  end.
