@@ -23,6 +23,7 @@
 -type error_reason() ::
         {file_error, term(), file:name_all()}
       | {invalid_json_data, json:error()}
+      | {invalid_output_directory, file:posix()}
       | openapi_generator:error_reason().
 
 -type ref() ::
@@ -41,16 +42,22 @@
 
 -spec generate(file:name_all(), file:name_all(), generate_options()) ->
         ok | {error, error_reason()}.
-generate(Filename, OutDir, Options) ->
+generate(Filename, OutDir0, Options) ->
+  OutDir = list_to_binary([filename:absname(OutDir0), $/]),
   case file:read_file(Filename) of
     {ok, File} ->
       case json:parse(File) of
         {ok, Data} ->
-          case maps:is_key(<<"swagger">>, Data) of
-            true ->
-              openapi_generator:generate(openapi_v2, Data, OutDir, Options);
-            false ->
-              openapi_generator:generate(openapi_v3, Data, OutDir, Options)
+          case filelib:ensure_dir(OutDir) of
+            ok ->
+              case maps:is_key(<<"swagger">>, Data) of
+                true ->
+                  openapi_generator:generate(openapi_v2, Data, OutDir, Options);
+                false ->
+                  openapi_generator:generate(openapi_v3, Data, OutDir, Options)
+              end;
+            {error, Reason} ->
+              {error, {invalid_output_directory, Reason}}
           end;
         {error, Reason} ->
           {error, {invalid_json_data, Reason}}
