@@ -39,19 +39,26 @@
                openapi:generate_options()) ->
         ok | {error, error_reason()}.
 generate(Mod, Data, OutDir, Options) ->
-  Language = maps:get(language, Options),
-  Generator = maps:get(generator, Options),
+  case get_generator(Mod, Options) of
+    {ok, GeneratorMod} ->
+      case validate(Data, Mod:definition()) of
+        {ok, Spec} ->
+          openapi_code_generator:generate(GeneratorMod, Spec, OutDir, Options);
+        {error, Reason} ->
+          {error, Reason}
+      end;
+    {error, Reason} ->
+      {error, Reason}
+  end.
+
+-spec get_generator(module(), openapi:generate_options()) ->
+        {ok, module()} | {error, error_reason()}.
+get_generator(Mod, #{language := Language, generator := Generator}) ->
   case maps:find(Language, Mod:supported_generator()) of
     {ok, SupportedGenerators} ->
       case maps:find(Generator, SupportedGenerators) of
         {ok, GeneratorMod} ->
-          case validate(Data, Mod:definition()) of
-            {ok, Spec} ->
-              openapi_code_generator:generate(GeneratorMod, Spec, OutDir,
-                                              Options);
-            {error, Reason} ->
-              {error, {invalid_specification, Reason}}
-          end;
+          {ok, GeneratorMod};
         error ->
           {error, {unsupported_generator, Generator}}
       end;
@@ -60,9 +67,14 @@ generate(Mod, Data, OutDir, Options) ->
   end.
 
 -spec validate(json:value(), jsv:definition()) ->
-        {error, [jsv:value_error()]} | {ok, specification()}.
+        {ok, specification()} | {error, error_reason()}.
 validate(Data, Definition) ->
   Options = #{type_map => openapi_jsv:type_map(),
               unknown_member_handling => keep,
               format_value_errors => true},
-  jsv:validate(Data, Definition, Options).
+  case jsv:validate(Data, Definition, Options) of
+    {ok, Spec} ->
+      {ok, Spec};
+    {error, Reason} ->
+      {error, {invalid_specification, Reason}}
+  end.
