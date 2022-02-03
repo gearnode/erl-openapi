@@ -27,8 +27,7 @@
         {unsupported_language, atom()}
       | {unsupported_generator, atom()}
       | {invalid_specification, [jsv:value_error()]}
-      | openapi_v2:error_reason()
-      | openapi_v3:error_reason().
+      | openapi:error_reason().
 
 -callback supported_generators() -> #{atom() := #{atom() := module()}}.
 

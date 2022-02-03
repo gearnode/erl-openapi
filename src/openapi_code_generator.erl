@@ -20,6 +20,7 @@
          remove_trailing_whitespaces/1,
          header_line/1,
          is_reserved_word/2,
+         template_model_dir/1,
          generate/4]).
 
 -type oas_type() ::
@@ -66,7 +67,19 @@ header_line(Mod) ->
 is_reserved_word(Mod, Word) ->
   lists:member(Word, Mod:reserved_words()).
 
-generate(Mod, _Spec, _OutDir, _Options) ->
-  Data =
-    lists:join("\n", [header_line(Mod), $\n]),
-  io:format("~s", [Data]).
+-spec template_model_dir(module()) -> file:name_all().
+template_model_dir(Mod) ->
+  filename:join(Mod:template_dir(), "model.mustache").
+
+generate(Mod, Spec, OutDir, Options) ->
+  ok.
+  %% generate_models(Mod, Spec).
+
+
+%% generate_models(Mod, #{definitions := ) ->
+
+
+  %% io:format("~p~n", [Models]),
+
+  %% ok.
+  %% Model = Mod:generate_models(Spec, OutDir, Options).
