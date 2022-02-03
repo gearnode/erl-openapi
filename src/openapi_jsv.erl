@@ -244,7 +244,7 @@ parameter_definition() ->
             #{value =>
                 {ref, media_type}}}},
      required =>
-       [in, required]}}.
+       [name, in]}}.
 
 -spec style_definition() -> jsv:definition().
 style_definition() ->
