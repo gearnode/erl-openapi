@@ -330,13 +330,14 @@ generate(Filename, OutDir0, Options) ->
                 true ->
                   {error, openapi_v2_is_not_supported};
                 false ->
+                  Specification = {ref, openapi, specification},
                   ValidateOptions =
                     #{type_map => openapi_jsv:type_map(),
                       unknown_member_handling => keep,
                       format_value_errors => true},
-                  case jsv:validate(Data, openapi, ValidateOptions) of
+                  case jsv:validate(Data,  Specification, ValidateOptions) of
                     {ok, Spec} ->
-                      openapi_generator:generate(Data, OutDir, Options);
+                      openapi_generator:generate(Spec, OutDir, Options);
                     {error, Reason} ->
                       {error, {invalid_specification, Reason}}
                   end
