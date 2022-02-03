@@ -14,65 +14,31 @@
 
 -module(openapi_generator).
 
--export_type([specification/0,
-              error_reason/0]).
+-export_type([error_reason/0]).
 
--export([generate/4]).
-
--type specification() ::
-        openapi_v2:specification()
-      | openapi_v3:specification().
+-export([generate/3]).
 
 -type error_reason() ::
         {unsupported_language, atom()}
-      | {unsupported_generator, atom()}
-      | {invalid_specification, [jsv:value_error()]}
-      | openapi:error_reason().
+      | {unsupported_generator, atom()}.
 
--callback supported_generators() -> #{atom() := #{atom() := module()}}.
+-spec supported_generators() -> map().
+supported_generators() ->
+  #{erlang =>
+      #{client => openapi_erlang_client_code_gen}}.
 
--callback definition() -> jsv:definition().
-
--spec generate(module(), json:value(), file:name_all(),
-               openapi:generate_options()) ->
+-spec generate(json:value(), file:name_all(), openapi:generate_options()) ->
         ok | {error, error_reason()}.
-generate(Mod, Data, OutDir, Options) ->
-  case get_generator_module(Mod, Options) of
-    {ok, GeneratorMod} ->
-      case validate(Data, Mod:definition()) of
-        {ok, Spec} ->
-          openapi_code_generator:generate(GeneratorMod, Spec, OutDir, Options);
-        {error, Reason} ->
-          {error, Reason}
-      end;
-    {error, Reason} ->
-      {error, Reason}
-  end.
-
--spec get_generator_module(module(), openapi:generate_options()) ->
-        {ok, module()} | {error, error_reason()}.
-get_generator_module(Mod, #{language := Language, generator := Generator}) ->
-  case maps:find(Language, Mod:supported_generators()) of
-    {ok, SupportedGenerators} ->
-      case maps:find(Generator, SupportedGenerators) of
-        {ok, GeneratorMod} ->
-          {ok, GeneratorMod};
+generate(Data, OutDir, #{language := Language, generator := Generator}) ->
+  case maps:find(Language, supported_generators()) of
+    {ok, Generators} ->
+      case maps:find(Generator, Generators) of
+        {ok, Mod} ->
+          %% TODO write file here.
+          ok;
         error ->
           {error, {unsupported_generator, Generator}}
       end;
     error ->
       {error, {unsupported_language, Language}}
-  end.
-
--spec validate(json:value(), jsv:definition()) ->
-        {ok, specification()} | {error, error_reason()}.
-validate(Data, Definition) ->
-  Options = #{type_map => openapi_jsv:type_map(),
-              unknown_member_handling => keep,
-              format_value_errors => true},
-  case jsv:validate(Data, Definition, Options) of
-    {ok, Spec} ->
-      {ok, Spec};
-    {error, Reason} ->
-      {error, {invalid_specification, Reason}}
   end.

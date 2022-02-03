@@ -47,10 +47,10 @@
         {file_error, term(), file:name_all()}
       | {invalid_json_data, json:error()}
       | {invalid_output_directory, file:posix()}
+      | {invalid_specification, [jsv:value_error()]}
       | openapi_generator:error_reason().
 
 %% -type error_reason() ::
-%%         {invalid_specification, [jsv:value_error()]}
 %%       | {invalid_unicode_data, unicode:chardata()}
 %%       | {incomplete_unicode_data, unicode:chardata()}
 %%       | {invalid_schema_ref, binary()}
@@ -328,9 +328,18 @@ generate(Filename, OutDir0, Options) ->
             ok ->
               case maps:is_key(<<"swagger">>, Data) of
                 true ->
-                  openapi_generator:generate(openapi_v2, Data, OutDir, Options);
+                  {error, openapi_v2_is_not_supported};
                 false ->
-                  openapi_generator:generate(openapi_v3, Data, OutDir, Options)
+                  ValidateOptions =
+                    #{type_map => openapi_jsv:type_map(),
+                      unknown_member_handling => keep,
+                      format_value_errors => true},
+                  case jsv:validate(Data, openapi, ValidateOptions) of
+                    {ok, Spec} ->
+                      openapi_generator:generate(Data, OutDir, Options);
+                    {error, Reason} ->
+                      {error, {invalid_specification, Reason}}
+                  end
               end;
             {error, Reason} ->
               {error, {invalid_output_directory, Reason}}
