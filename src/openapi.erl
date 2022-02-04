@@ -61,7 +61,7 @@
 
 -type specification() ::
         #{info := info(),
-          server => [server()],
+          servers => [server()],
           paths := #{binary() => path()},
           components => components(),
           security => [security_requirement()],
