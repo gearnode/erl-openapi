@@ -55,6 +55,7 @@ render_1(Name, Context) ->
 render_1(Name, Context, ExtraOptions) ->
   DefaultOptions =
     #{template_directory => template_directory(),
+      disable_html_escaping => true,
       error_on_unknown_variable => true,
       error_on_unknown_partial => true,
       error_on_invalid_partial => true,
