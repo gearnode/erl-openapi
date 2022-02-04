@@ -16,7 +16,8 @@
 
 -export_type([error_reason/0]).
 
--export([generate/3]).
+-export([generate/3,
+         to_snake_case/1]).
 
 -type error_reason() ::
         {unsupported_language, atom()}
@@ -43,3 +44,7 @@ generate(Data, OutDir,
     error ->
       {error, {unsupported_language, Language}}
   end.
+
+-spec to_snake_case(iodata()) -> iodata().
+to_snake_case(String) ->
+  string:replace(string:replace(string:lowercase(String), ".", "_", all), "-", "_", all).
