@@ -20,7 +20,8 @@
 
 -type error_reason() ::
         {unsupported_language, atom()}
-      | {unsupported_generator, atom()}.
+      | {unsupported_generator, atom()}
+      | openapi_erlang_client_code_gen:error_reason().
 
 -spec supported_generators() -> map().
 supported_generators() ->
@@ -29,13 +30,13 @@ supported_generators() ->
 
 -spec generate(json:value(), file:name_all(), openapi:generate_options()) ->
         ok | {error, error_reason()}.
-generate(Data, OutDir, #{language := Language, generator := Generator}) ->
+generate(Data, OutDir,
+         #{language := Language, generator := Generator} = Options) ->
   case maps:find(Language, supported_generators()) of
     {ok, Generators} ->
       case maps:find(Generator, Generators) of
         {ok, Mod} ->
-          %% TODO write file here.
-          ok;
+          Mod:generate(Data, OutDir, Options);
         error ->
           {error, {unsupported_generator, Generator}}
       end;
