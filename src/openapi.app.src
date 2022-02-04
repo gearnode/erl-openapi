@@ -23,6 +23,7 @@
     syntax_tools,
     uri,
     json,
+    mustache,
     jsv]},
   {env, []},
   {modules, []}]}.
