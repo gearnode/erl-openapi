@@ -44,44 +44,42 @@ generate(Spec, OutDir, Options) ->
   PackageName = maps:get(package_name, Options),
   Data = #{datetime => Datetime,
            package_name => <<PackageName/binary, "_openapi">>,
-           info => iolist_to_binary(info_fun(Spec)),
-           servers => iolist_to_binary(servers_fun(Spec))},
+           functions => [info_fun_0(Spec), servers_fun_0(Spec)]},
   File = openapi_mustache:render(<<"erlang-client/openapi.erl">>, Data),
   io:format("~s", [File]).
 
-
--spec info_fun(openapi:specification()) -> iodata().
-info_fun(#{info := Info}) ->
+-spec info_fun_0(openapi:specification()) -> binary().
+info_fun_0(#{info := Info}) ->
   Data = io_lib:format("~p.", [Info]),
   Lines = string:split(Data, "\n", all),
   Documents = lists:map(fun (Line) -> text(Line) end, Lines),
+  iolist_to_binary(
+    prettypr:format(
+      sep(
+        [beside(
+           break(text("-spec info() -> info().")),
+           break(text("info() ->"))),
+         nest(4, beside(
+                   sep(Documents),
+                   empty())),
+         empty()]))).
 
-  prettypr:format(
-    sep(
-      [beside(
-         break(text("-spec info() -> info().")),
-         break(text("info() ->"))),
-       nest(4, beside(
-                 sep(Documents),
-                 empty())),
-       empty()])).
-
--spec servers_fun(openapi:specification()) -> iodata().
-servers_fun(#{servers := Servers}) ->
+-spec servers_fun_0(openapi:specification()) -> iodata().
+servers_fun_0(#{servers := Servers}) ->
   Data = io_lib:format("~p.", [Servers]),
   Lines = string:split(Data, "\n", all),
   Documents = lists:map(fun (Line) -> text(Line) end, Lines),
-
-  prettypr:format(
-    sep(
-      [beside(
-         break(text("-spec servers() -> [server()].")),
-         break(text("servers() ->"))),
-       nest(4, beside(
-                 sep(Documents),
-                 empty())),
-       empty()]));
-servers_fun(_) ->
+  iolist_to_binary(
+    prettypr:format(
+      sep(
+        [beside(
+           break(text("-spec servers() -> [server()].")),
+           break(text("servers() ->"))),
+         nest(4, beside(
+                   sep(Documents),
+                   empty())),
+         empty()])));
+servers_fun_0(_) ->
   "".
 
 %% schemas(none, #{type := T} = State) ->
