@@ -71,7 +71,7 @@ generate_types({Name, Schema, I}, Acc) ->
   Comment = type_comment(Name, Schema),
   Type = #{comment => type_comment(Name, Schema),
            name => openapi_generator:to_snake_case(Name, #{}),
-           value => type_definition(Schema)},
+           value => type_definition(Schema, 8)},
 
   generate_types(maps:next(I), [Type | Acc]).
 
@@ -81,8 +81,14 @@ type_comment(Name, #{description := Description}) when Description =/= <<>> ->
 type_comment(Name, _) ->
   unicode:characters_to_binary(["%% ", Name]).
 
--spec type_definition(openapi:schema()) -> binary().
-type_definition(#{type := <<"object">>, properties := Props} = Schema) ->
+-spec indent(non_neg_integer()) -> iodata().
+indent(0) ->
+  "";
+indent(Size) ->
+  lists:map(fun (_) -> $\s end, lists:seq(1, Size)).
+
+-spec type_definition(openapi:schema(), non_neg_integer()) -> binary().
+type_definition(#{type := <<"object">>, properties := Props} = Schema, Indent) ->
   Required = maps:get(required, Schema, []),
   F = fun (Name, Schema2, Acc) ->
           Operator =
@@ -92,62 +98,27 @@ type_definition(#{type := <<"object">>, properties := Props} = Schema) ->
             end,
           case maps:find(type, Schema2) of
             {ok, <<"object">>} ->
-              X = string:split(type_definition(Schema2), "\n", all),
-              X1 = lists:map(fun string:trim/1, X),
-              Indent = lists:map(fun (_) -> $\s end, lists:seq(1, 18)),
-              Indent2 = lists:map(fun (_) -> $\s end, lists:seq(1, 16)),
-              X2 = lists:join(["\n", Indent], X1),
-
-              [[Name, $\s, Operator, $\n, Indent2, X2] | Acc];
+              [[Name, $\s, Operator, $\n, indent(Indent + 8), type_definition(Schema2, Indent + 8)] | Acc];
             _ ->
-              [[Name, $\s, Operator, $\s, type_definition(Schema2)] | Acc]
+              [[Name, $\s, Operator, $\s, type_definition(Schema2, Indent)] | Acc]
           end
       end,
   Definition = maps:fold(F, [], Props),
-  unicode:characters_to_binary(["#{", lists:join(",\n          ", Definition), "}"]);
-type_definition(#{type := <<"object">>}) ->
+  unicode:characters_to_binary(["#{", lists:join([",\n", indent(Indent + 2)], Definition), "}"]);
+type_definition(#{type := <<"object">>}, _) ->
   <<"json:value()">>;
-type_definition(#{type := <<"integer">>}) ->
+type_definition(#{type := <<"integer">>}, _) ->
   <<"number()">>;
-type_definition(#{type := <<"boolean">>}) ->
+type_definition(#{type := <<"boolean">>}, _) ->
   <<"boolean()">>;
-type_definition(#{type := <<"array">>}) ->
+type_definition(#{type := <<"array">>}, _) ->
   <<"list()">>;
-type_definition(#{type := <<"string">>, enum := Enum}) ->
+type_definition(#{type := <<"string">>, enum := Enum}, _) ->
   unicode:characters_to_binary(lists:join(" | ", Enum));
-type_definition(#{type := <<"string">>}) ->
+type_definition(#{type := <<"string">>}, _) ->
   <<"binary()">>;
-type_definition(_) ->
+type_definition(_, _) ->
   <<"json:value()">>.
-
-%% generate_type(Schema = #{type := <<"object">>, properties := Properties}) ->
-%%   Required = maps:get(required, Schema, []),
-%%   Types = maps:fold(
-%%             fun (Name, Schema2, Acc) ->
-%%                 Op = case lists:member(Name, Required) of
-%%                        true -> " := ";
-%%                        false -> " => "
-%%                      end,
-%%                 case maps:find(description, Schema2) of
-%%                   {ok, Value} ->
-%%                     V = binary_to_list(unicode:characters_to_binary(Value)),
-%%                     [[comment(V, 10), "\n          ", Name, Op, generate_type(Schema2)] | Acc];
-%%                   error ->
-%%                     [[Name, Op, generate_type(Schema2)] | Acc]
-%%                 end
-%%             end, [], Properties),
-%%
-%%   ["#{", lists:join(",\n\n          ", Types), "}.\n"];
-%% generate_type(Schema = #{type := <<"integer">>}) ->
-%%   "number()";
-%% generate_type(Schema = #{type := <<"boolean">>}) ->
-%%   "boolean()";
-%% generate_type(Schema = #{type := <<"string">>}) ->
-%%   "binary()";
-%% generate_type(Schema = #{type := <<"array">>}) ->
-%%   "lists()";
-%% generate_type(_) ->
-%%   "json:value()".
 
 -spec comment(iodata()) -> iodata().
 comment(Data) ->
