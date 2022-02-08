@@ -308,6 +308,7 @@
 -type generate_options() ::
         #{language := atom(),
           generator := atom(),
+          inflection => #{string() := string()},
           package_name := binary(),
           model_package => binary(),
           model_name_suffix => binary(),

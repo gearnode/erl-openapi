@@ -17,7 +17,7 @@
 -export_type([error_reason/0]).
 
 -export([generate/3,
-         to_snake_case/1]).
+         to_snake_case/2]).
 
 -type error_reason() ::
         {unsupported_language, atom()}
@@ -45,6 +45,24 @@ generate(Data, OutDir,
       {error, {unsupported_language, Language}}
   end.
 
--spec to_snake_case(iodata()) -> iodata().
-to_snake_case(String) ->
-  string:replace(string:replace(string:lowercase(String), ".", "_", all), "-", "_", all).
+to_snake_case(Bin, Inflection) ->
+  NewBin =
+    maps:fold(fun (SearchPattern, Replacement, String) ->
+                  string:replace(String, SearchPattern, Replacement, all)
+              end, Bin, Inflection),
+  iolist_to_binary(to_snake_case_1(iolist_to_binary(NewBin), [])).
+
+to_snake_case_1(<<>>, Acc) ->
+  lists:reverse(Acc);
+to_snake_case_1(<<".", Rest/binary>>, Acc) ->
+  to_snake_case_1(Rest, [$_ | Acc]);
+to_snake_case_1(<<"-", Rest/binary>>, Acc) ->
+  to_snake_case_1(Rest, [$_ | Acc]);
+to_snake_case_1(<<"_", Rest/binary>>, [$_ | _] = Acc) ->
+  to_snake_case_1(Rest, Acc);
+to_snake_case_1(<<C, Rest/binary>>, [$_ | _] = Acc) when C >= $A, C =< $Z ->
+  to_snake_case_1(Rest, [C + 32 | Acc]);
+to_snake_case_1(<<C, Rest/binary>>, Acc) when C >= $A, C =< $Z ->
+  to_snake_case_1(Rest, [[$_, C + 32] | Acc]);
+to_snake_case_1(<<A, Rest/binary>>, Acc) ->
+  to_snake_case_1(Rest, [A | Acc]).

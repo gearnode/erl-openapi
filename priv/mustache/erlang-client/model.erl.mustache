@@ -3,7 +3,14 @@
 -module({{package_name}}).
 
 {{#types}}
-{{.}}
+-export_type([{{name}}/0]).
+{{/types}}
+
+{{#types}}
+{{comment}}
+-type {{name}}() ::
+        {{value}}
+
 {{/types}}
 
 {{#functions}}

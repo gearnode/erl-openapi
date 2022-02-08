@@ -16,6 +16,7 @@
 
 -import(prettypr,
         [text/1,
+         null_text/1,
          nest/2,
          above/2,
          beside/2,
@@ -45,7 +46,12 @@ generate(Spec, OutDir, Options) ->
 
   F1 = generate_openapi_file(Datetime, PackageName, Spec, Options),
   F2 = generate_model_file(Datetime, PackageName, Spec, Options),
-  io:format("~s", [[F1, F2]]).
+
+  file:write_file(filename:join(OutDir, <<PackageName/binary, "_openapi.erl">>), F1),
+  file:write_file(filename:join(OutDir, <<PackageName/binary, "_schemas.erl">>), F2),
+  ok.
+
+  %% io:format("~s", [[F1, F2]]).
 
 generate_model_file(Datetime, PackageName, Spec, Options) ->
   Schemas = maps:get(schemas, maps:get(components, Spec, #{}), #{}),
@@ -61,18 +67,65 @@ generate_types(Schemas) ->
 
 generate_types(none, Acc) ->
   lists:reverse(Acc);
+  %% iolist_to_binary(lists:join("\n", lists:reverse(Acc)));
 generate_types({Name, Schema, I}, Acc) ->
-  Type =
-    iolist_to_binary(
-      prettypr:format(
-        sep([break(text(["-type ", Name, "() ::"])),
-            nest(10,
-                 sep([text("json:value()."),
-                      empty()])),
-            empty()]))),
 
-  %% Type = ["-type ", Name, "() :: json:value()."],
-  generate_types(maps:next(I), [Type | Acc]).
+  Comment = unicode:characters_to_binary(["%% ", Name, "\n%%\n", comment(maps:get(description, Schema, <<>>))]),
+  Definition = generate_type(Schema),
+  generate_types(maps:next(I), [#{name => openapi_generator:to_snake_case(Name, #{"API" => "api"}),  comment => Comment, value => iolist_to_binary(Definition)} | Acc]).
+
+generate_type(Schema = #{type := <<"object">>, properties := Properties}) ->
+  Required = maps:get(required, Schema, []),
+  Types = maps:fold(
+            fun (Name, Schema2, Acc) ->
+                Op = case lists:member(Name, Required) of
+                       true -> " := ";
+                       false -> " => "
+                     end,
+                case maps:find(description, Schema2) of
+                  {ok, Value} ->
+                    V = binary_to_list(unicode:characters_to_binary(Value)),
+                    [[comment(V, 10), "\n          ", Name, Op, generate_type(Schema2)] | Acc];
+                  error ->
+                    [[Name, Op, generate_type(Schema2)] | Acc]
+                end
+            end, [], Properties),
+
+  ["#{", lists:join(",\n\n          ", Types), "}.\n"];
+generate_type(Schema = #{type := <<"integer">>}) ->
+  "number()";
+generate_type(Schema = #{type := <<"boolean">>}) ->
+  "boolean()";
+generate_type(Schema = #{type := <<"string">>}) ->
+  "binary()";
+generate_type(Schema = #{type := <<"array">>}) ->
+  "lists()";
+generate_type(_) ->
+  "json:value()".
+
+-spec comment(iodata()) -> iodata().
+comment(Data) ->
+  comment(Data, 0).
+
+comment(Data, Size) ->
+  Indent =
+    case Size of
+      0 ->
+        "";
+      _ ->
+        lists:map(fun (_) -> $\s end, lists:seq(1, Size))
+    end,
+  Paragraphs =
+    lists:map(fun (LineData) ->
+                  case unicode:characters_to_list(LineData) of
+                    "" ->
+                      prettypr:break(prettypr:text(""));
+                    Line ->
+                      prettypr:text_par(Line)
+                  end
+              end, string:split(Data, "\n", all)),
+  FilledText = prettypr:format(prettypr:sep(Paragraphs), 77),
+  ["%% ", string:replace(FilledText, "\n", ["\n", Indent, "%% "], all)].
 
 generate_openapi_file(Datetime, PackageName, Spec, Options) ->
   Data = #{datetime => Datetime,
