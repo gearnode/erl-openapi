@@ -309,6 +309,7 @@
         #{language := atom(),
           generator := atom(),
           inflection => #{string() := string()},
+          fill_column => pos_integer(),
           package_name := binary(),
           model_package => binary(),
           model_name_suffix => binary(),
