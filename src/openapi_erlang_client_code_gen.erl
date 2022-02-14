@@ -97,7 +97,8 @@ type_definition(#{type := <<"object">>, properties := Props} = Schema, Indent) -
             end,
           case maps:find(type, Schema2) of
             {ok, <<"object">>} ->
-              [[Name, $\s, Operator, $\n, indent(Indent + 8), type_definition(Schema2, Indent + 8)] | Acc];
+              [[Name, $\s, Operator, $\n,
+                indent(Indent + 8), type_definition(Schema2, Indent + 8)] | Acc];
             _ ->
               [[Name, $\s, Operator, $\s, type_definition(Schema2, Indent)] | Acc]
           end
