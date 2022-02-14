@@ -107,8 +107,8 @@ type_definition(#{type := <<"object">>, properties := Props} = Schema, Indent) -
   unicode:characters_to_binary(["#{", lists:join([",\n", indent(Indent + 2)], Definition), "}"]);
 type_definition(#{type := <<"object">>}, _) ->
   <<"json:value()">>;
-type_definition(#{type := <<"integer">>}, _) ->
-  <<"number()">>;
+type_definition(#{type := <<"integer">>} = S, _) ->
+  <<"integer()">>;
 type_definition(#{type := <<"boolean">>}, _) ->
   <<"boolean()">>;
 type_definition(#{type := <<"array">>}, _) ->
