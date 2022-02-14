@@ -127,13 +127,6 @@ comment(Data) ->
   comment(Data, 0).
 
 comment(Data, Size) ->
-  Indent =
-    case Size of
-      0 ->
-        "";
-      _ ->
-        lists:map(fun (_) -> $\s end, lists:seq(1, Size))
-    end,
   Paragraphs =
     lists:map(fun (LineData) ->
                   case unicode:characters_to_list(LineData) of
@@ -144,7 +137,7 @@ comment(Data, Size) ->
                   end
               end, string:split(Data, "\n", all)),
   FilledText = prettypr:format(prettypr:sep(Paragraphs), 77),
-  ["%% ", string:replace(FilledText, "\n", ["\n", Indent, "%% "], all)].
+  ["%% ", string:replace(FilledText, "\n", ["\n", indent(Size), "%% "], all)].
 
 generate_openapi_file(Datetime, PackageName, Spec, Options) ->
   Data = #{datetime => Datetime,
