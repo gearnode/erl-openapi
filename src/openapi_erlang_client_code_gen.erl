@@ -127,6 +127,17 @@ comment(Data) ->
   comment(Data, 0).
 
 comment(Data, Size) ->
+  F = fun
+        Clean(<<>>, Acc) ->
+          lists:reverse(Acc);
+        Clean(<<$\n, $\n, R/binary>>, Acc) ->
+          Clean(R, [[$\n, $\n] | Acc]);
+        Clean(<<$\n, R/binary>>, Acc) ->
+          Clean(R, [$\s | Acc]);
+        Clean(<<C, R/binary>>, Acc) ->
+          Clean(R, [C | Acc])
+      end,
+  Data2 = F(iolist_to_binary(Data), []),
   Paragraphs =
     lists:map(fun (LineData) ->
                   case unicode:characters_to_list(LineData) of
@@ -135,7 +146,7 @@ comment(Data, Size) ->
                     Line ->
                       prettypr:text_par(Line)
                   end
-              end, string:split(Data, "\n", all)),
+              end, string:split(Data2, "\n", all)),
   FilledText = prettypr:format(prettypr:sep(Paragraphs), 77),
   ["%% ", string:replace(FilledText, "\n", ["\n", indent(Size), "%% "], all)].
 
