@@ -68,7 +68,6 @@ generate_types(Schemas) ->
 generate_types(none, Acc) ->
   lists:reverse(Acc);
 generate_types({Name, Schema, I}, Acc) ->
-  Comment = type_comment(Name, Schema),
   Type = #{comment => type_comment(Name, Schema),
            name => openapi_generator:to_snake_case(Name, #{}),
            value => type_definition(Schema, 8)},
