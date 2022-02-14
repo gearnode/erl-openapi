@@ -51,34 +51,37 @@ generate(Spec, OutDir, Options) ->
   file:write_file(filename:join(OutDir, <<PackageName/binary, "_schemas.erl">>), F2),
   ok.
 
-  %% io:format("~s", [[F1, F2]]).
-
 generate_model_file(Datetime, PackageName, Spec, Options) ->
   Schemas = maps:get(schemas, maps:get(components, Spec, #{}), #{}),
   Data = #{datetime => Datetime,
            package_name => <<PackageName/binary, "_model">>,
-           types => generate_types(Schemas),
+           types => generate_types(Schemas, Options),
            functions => []},
   openapi_mustache:render(<<"erlang-client/model.erl">>, Data).
 
-generate_types(Schemas) ->
+generate_types(Schemas, Options) ->
   Iterator = maps:iterator(Schemas),
-  generate_types(maps:next(Iterator), []).
+  generate_types(maps:next(Iterator), Options, []).
 
-generate_types(none, Acc) ->
+generate_types(none, _, Acc) ->
   lists:reverse(Acc);
-generate_types({Name, Schema, I}, Acc) ->
-  Type = #{comment => type_comment(Name, Schema),
+generate_types({Name, Schema, I}, Options, Acc) ->
+  Type = #{comment => type_comment(Name, Schema, Options),
            name => openapi_generator:to_snake_case(Name, #{}),
            value => type_definition(Schema, 8)},
+  generate_types(maps:next(I), Options, [Type | Acc]).
 
-  generate_types(maps:next(I), [Type | Acc]).
-
--spec type_comment(binary(), openapi:schema()) -> binary().
-type_comment(Name, #{description := Description}) when Description =/= <<>> ->
-  unicode:characters_to_binary(["%% ", Name, "\n%%\n", comment(Description)]);
-type_comment(Name, _) ->
-  unicode:characters_to_binary(["%% ", Name]).
+-spec type_comment(binary(), openapi:schema(), openapi:generate_options()) -> binary().
+type_comment(Name, Schema, Options) ->
+  Text =
+    case maps:find(description, Schema) of
+      {ok, Value} when Value =/= <<>> ->
+        [Name, "\n\n", Value];
+      _ ->
+        Name
+    end,
+  unicode:characters_to_binary(
+    openapi_code:comment("%%", Text, 0, Options)).
 
 -spec indent(non_neg_integer()) -> iodata().
 indent(0) ->
@@ -95,10 +98,13 @@ type_definition(#{type := <<"object">>, properties := Props} = Schema, Indent) -
               true -> ":=";
               false -> "=>"
             end,
-          case maps:find(type, Schema2) of
-            {ok, <<"object">>} ->
+          case Schema2 of
+            #{type := <<"object">>} ->
               [[Name, $\s, Operator, $\n,
                 indent(Indent + 8), type_definition(Schema2, Indent + 8)] | Acc];
+            #{type := <<"string">>, enum := _} ->
+              [[Name, $\s, Operator, $\n,
+               indent(Indent + 8), type_definition(Schema2, Indent + 8)] | Acc];
             _ ->
               [[Name, $\s, Operator, $\s, type_definition(Schema2, Indent)] | Acc]
           end
@@ -115,40 +121,20 @@ type_definition(#{type := <<"boolean">>}, _) ->
   <<"boolean()">>;
 type_definition(#{type := <<"array">>}, _) ->
   <<"list()">>;
-type_definition(#{type := <<"string">>, enum := Enum}, _) ->
-  unicode:characters_to_binary(lists:join(" | ", Enum));
+type_definition(#{type := <<"string">>, enum := Enum}, Size) ->
+  case Enum of
+    [Value] ->
+      unicode:characters_to_binary(Value);
+    _ ->
+      Prefix = ["\n", openapi_string:text_indent(Size), "| "],
+      unicode:characters_to_binary(
+        [openapi_string:text_indent(2),
+         lists:join(Prefix, Enum)])
+  end;
 type_definition(#{type := <<"string">>}, _) ->
   <<"binary()">>;
 type_definition(_, _) ->
   <<"json:value()">>.
-
--spec comment(iodata()) -> iodata().
-comment(Data) ->
-  comment(Data, 0).
-
-comment(Data, Size) ->
-  F = fun
-        Clean(<<>>, Acc) ->
-          lists:reverse(Acc);
-        Clean(<<$\n, $\n, R/binary>>, Acc) ->
-          Clean(R, [[$\n, $\n] | Acc]);
-        Clean(<<$\n, R/binary>>, Acc) ->
-          Clean(R, [$\s | Acc]);
-        Clean(<<C, R/binary>>, Acc) ->
-          Clean(R, [C | Acc])
-      end,
-  Data2 = F(iolist_to_binary(Data), []),
-  Paragraphs =
-    lists:map(fun (LineData) ->
-                  case unicode:characters_to_list(LineData) of
-                    "" ->
-                      prettypr:break(prettypr:text(""));
-                    Line ->
-                      prettypr:text_par(Line)
-                  end
-              end, string:split(Data2, "\n", all)),
-  FilledText = prettypr:format(prettypr:sep(Paragraphs), 77),
-  ["%% ", string:replace(FilledText, "\n", ["\n", indent(Size), "%% "], all)].
 
 generate_openapi_file(Datetime, PackageName, Spec, Options) ->
   Data = #{datetime => Datetime,
