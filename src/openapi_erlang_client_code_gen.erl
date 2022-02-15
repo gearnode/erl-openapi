@@ -102,6 +102,8 @@ type_definition(#{type := object, properties := Props} = Schema, Indent) ->
             #{type := object} ->
               [[Name, $\s, Operator, $\n,
                 indent(Indent + 8), type_definition(Schema2, Indent + 8)] | Acc];
+            #{type := string, enum := [_]} ->
+              [[Name, $\s, Operator, $\s, type_definition(Schema2, Indent + 8)] | Acc];
             #{type := string, enum := _} ->
               [[Name, $\s, Operator, $\n,
                indent(Indent + 8), type_definition(Schema2, Indent + 8)] | Acc];
