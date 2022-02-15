@@ -90,7 +90,7 @@ indent(Size) ->
   lists:map(fun (_) -> $\s end, lists:seq(1, Size)).
 
 -spec type_definition(openapi:schema(), non_neg_integer()) -> binary().
-type_definition(#{type := <<"object">>, properties := Props} = Schema, Indent) ->
+type_definition(#{type := object, properties := Props} = Schema, Indent) ->
   Required = maps:get(required, Schema, []),
   F = fun (Name, Schema2, Acc) ->
           Operator =
@@ -99,10 +99,10 @@ type_definition(#{type := <<"object">>, properties := Props} = Schema, Indent) -
               false -> "=>"
             end,
           case Schema2 of
-            #{type := <<"object">>} ->
+            #{type := object} ->
               [[Name, $\s, Operator, $\n,
                 indent(Indent + 8), type_definition(Schema2, Indent + 8)] | Acc];
-            #{type := <<"string">>, enum := _} ->
+            #{type := string, enum := _} ->
               [[Name, $\s, Operator, $\n,
                indent(Indent + 8), type_definition(Schema2, Indent + 8)] | Acc];
             _ ->
@@ -111,17 +111,17 @@ type_definition(#{type := <<"object">>, properties := Props} = Schema, Indent) -
       end,
   Definition = maps:fold(F, [], Props),
   unicode:characters_to_binary(["#{", lists:join([",\n", indent(Indent + 2)], Definition), "}"]);
-type_definition(#{type := <<"object">>}, _) ->
+type_definition(#{type := object}, _) ->
   <<"json:value()">>;
-type_definition(#{type := <<"integer">>}, _) ->
+type_definition(#{type := integer}, _) ->
   <<"integer()">>;
-type_definition(#{type := <<"number">>}, _) ->
+type_definition(#{type := number}, _) ->
   <<"number()">>;
-type_definition(#{type := <<"boolean">>}, _) ->
+type_definition(#{type := boolean}, _) ->
   <<"boolean()">>;
-type_definition(#{type := <<"array">>}, _) ->
+type_definition(#{type := array}, _) ->
   <<"list()">>;
-type_definition(#{type := <<"string">>, enum := Enum}, Size) ->
+type_definition(#{type := string, enum := Enum}, Size) ->
   case Enum of
     [Value] ->
       unicode:characters_to_binary(Value);
@@ -131,7 +131,7 @@ type_definition(#{type := <<"string">>, enum := Enum}, Size) ->
         [openapi_string:text_indent(2),
          lists:join(Prefix, Enum)])
   end;
-type_definition(#{type := <<"string">>}, _) ->
+type_definition(#{type := string}, _) ->
   <<"binary()">>;
 type_definition(_, _) ->
   <<"json:value()">>.

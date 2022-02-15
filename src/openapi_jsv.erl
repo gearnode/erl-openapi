@@ -399,7 +399,7 @@ schema_definition() ->
          enum =>
            {array,
             #{element => any, unique_elements => true, min_length => 1}},
-         type => string,
+         type => {string, #{values => [object, string, integer, number, array, boolean, '$ref']}},
          allOf =>
            {array,
             #{element =>
