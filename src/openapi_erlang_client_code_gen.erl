@@ -93,7 +93,7 @@ schema_to_typespec(#{type := object, properties := Props} = Schema) ->
               true -> " := ";
               false -> " => "
             end,
-          [[Name, Operator, schema_to_typespec(Schema2)] | Acc]
+          [[$', Name, $', Operator, schema_to_typespec(Schema2)] | Acc]
       end,
   Definition = maps:fold(F, [], Props),
   [$#, ${, lists:join(", ", Definition), $}];
