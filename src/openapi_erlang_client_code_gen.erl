@@ -124,6 +124,8 @@ type_definition(#{type := integer, nullable := true}, _) ->
   <<"integer() | null">>;
 type_definition(#{type := integer}, _) ->
   <<"integer()">>;
+type_definition(#{type := number, nullable := true}, _) ->
+  <<"number() | null">>;
 type_definition(#{type := number}, _) ->
   <<"number()">>;
 type_definition(#{type := boolean}, _) ->
