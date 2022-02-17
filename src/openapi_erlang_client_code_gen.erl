@@ -128,6 +128,8 @@ type_definition(#{type := number, nullable := true}, _) ->
   <<"number() | null">>;
 type_definition(#{type := number}, _) ->
   <<"number()">>;
+type_definition(#{type := boolean, nullable := true}, _) ->
+  <<"boolean() | null">>;
 type_definition(#{type := boolean}, _) ->
   <<"boolean()">>;
 type_definition(#{type := array}, _) ->
