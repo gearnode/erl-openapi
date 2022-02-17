@@ -68,7 +68,7 @@ generate_types(none, _, Acc) ->
 generate_types({Name, Schema, I}, Options, Acc) ->
   Type = #{comment => type_comment(Name, Schema, Options),
            name => openapi_generator:to_snake_case(Name, #{}),
-           value => type_definition(Schema, 8)},
+           value => unicode:characters_to_binary(type_definition(Schema))},
   generate_types(maps:next(I), Options, [Type | Acc]).
 
 -spec type_comment(binary(), openapi:schema(), openapi:generate_options()) -> binary().
@@ -83,76 +83,52 @@ type_comment(Name, Schema, Options) ->
   unicode:characters_to_binary(
     openapi_code:comment("%%", Text, 0, Options)).
 
--spec indent(non_neg_integer()) -> iodata().
-indent(0) ->
-  "";
-indent(Size) ->
-  lists:map(fun (_) -> $\s end, lists:seq(1, Size)).
-
--spec type_definition(openapi:schema(), non_neg_integer()) -> binary().
-type_definition(#{type := object, properties := Props} = Schema, Indent) ->
+-spec type_definition(openapi:schema()) -> binary().
+type_definition(#{type := object, properties := Props} = Schema) ->
   Required = maps:get(required, Schema, []),
   F = fun (Name, Schema2, Acc) ->
           Operator =
             case lists:member(Name, Required) of
-              true -> ":=";
-              false -> "=>"
+              true -> " := ";
+              false -> " => "
             end,
-          case Schema2 of
-            #{type := object, properties := _} ->
-              [[Name, $\s, Operator, $\n,
-                indent(Indent + 8), type_definition(Schema2, Indent + 8)] | Acc];
-            #{type := object} ->
-              [[Name, $\s, Operator, $\s,
-                type_definition(Schema2, Indent + 8)] | Acc];
-            #{type := string, enum := [_]} ->
-              [[Name, $\s, Operator, $\s, type_definition(Schema2, Indent + 8)] | Acc];
-            #{type := string, enum := _} ->
-              [[Name, $\s, Operator, $\n,
-               indent(Indent + 8), type_definition(Schema2, Indent + 8)] | Acc];
-            _ ->
-              [[Name, $\s, Operator, $\s, type_definition(Schema2, Indent)] | Acc]
-          end
+          [[Name, Operator, type_definition(Schema2)] | Acc]
       end,
   Definition = maps:fold(F, [], Props),
-  unicode:characters_to_binary(["#{", lists:join([",\n", indent(Indent + 2)], Definition), "}"]);
-type_definition(#{type := object, nullable := true}, _) ->
-  <<"json:value() | null">>;
-type_definition(#{type := object}, _) ->
-  <<"json:value()">>;
-type_definition(#{type := integer, nullable := true}, _) ->
-  <<"integer() | null">>;
-type_definition(#{type := integer}, _) ->
-  <<"integer()">>;
-type_definition(#{type := number, nullable := true}, _) ->
-  <<"number() | null">>;
-type_definition(#{type := number}, _) ->
-  <<"number()">>;
-type_definition(#{type := boolean, nullable := true}, _) ->
-  <<"boolean() | null">>;
-type_definition(#{type := boolean}, _) ->
-  <<"boolean()">>;
-type_definition(#{type := array}, _) ->
-  <<"list()">>;
-type_definition(#{type := string, enum := Enum}, Size) ->
-  case Enum of
-    [Value] ->
-      unicode:characters_to_binary(Value);
-    _ ->
-      Prefix = ["\n", openapi_string:text_indent(Size), "| "],
-      unicode:characters_to_binary(
-        [openapi_string:text_indent(2),
-         lists:join(Prefix, Enum)])
+  ["#{", lists:join(", ", Definition), "}"];
+type_definition(#{type := object, nullable := true}) ->
+  "json:value() | null";
+type_definition(#{type := object}) ->
+  "json:value()";
+type_definition(#{type := integer, nullable := true}) ->
+  "integer() | null";
+type_definition(#{type := integer}) ->
+  "integer()";
+type_definition(#{type := number, nullable := true}) ->
+  "number() | null";
+type_definition(#{type := number}) ->
+  "number()";
+type_definition(#{type := boolean, nullable := true}) ->
+  "boolean() | null";
+type_definition(#{type := boolean}) ->
+  "boolean()";
+type_definition(#{type := array} = Schema) ->
+  case maps:find(items, Schema) of
+    {ok, ItemSchema} ->
+      ["[", type_definition(ItemSchema), "]"];
+    errors ->
+      "list()"
   end;
-type_definition(#{type := string, nullable := true}, _) ->
-  <<"binary() | null">>;
-type_definition(#{type := string}, _) ->
-  <<"binary()">>;
-type_definition(#{'$ref' := Ref}, _) ->
-  Name = lists:last(Ref),
-  <<Name/binary, "()">>;
-type_definition(_, _) ->
-  <<"json:value()">>.
+type_definition(#{type := string, enum := Enum}) ->
+  lists:join(" | ", lists:map(fun (X) -> ["'", X, "'"] end, Enum));
+type_definition(#{type := string, nullable := true}) ->
+  "binary() | null";
+type_definition(#{type := string}) ->
+  "binary()";
+type_definition(#{'$ref' := Ref}) ->
+  [lists:last(Ref), "()"];
+type_definition(_) ->
+  "json:value()".
 
 generate_openapi_file(Datetime, PackageName, Spec, Options) ->
   Data = #{datetime => Datetime,
