@@ -144,6 +144,8 @@ type_definition(#{type := string, enum := Enum}, Size) ->
         [openapi_string:text_indent(2),
          lists:join(Prefix, Enum)])
   end;
+type_definition(#{type := string, nullable := true}, _) ->
+  <<"binary() | null">>;
 type_definition(#{type := string}, _) ->
   <<"binary()">>;
 type_definition(#{'$ref' := Ref}, _) ->
