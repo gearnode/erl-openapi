@@ -68,7 +68,7 @@ generate_types(none, _, Acc) ->
 generate_types({Name, Schema, I}, Options, Acc) ->
   Type = #{comment => type_comment(Name, Schema, Options),
            name => openapi_generator:to_snake_case(Name, #{}),
-           value => unicode:characters_to_binary(type_definition(Schema))},
+           value => unicode:characters_to_binary(schema_to_typespec(Schema))},
   generate_types(maps:next(I), Options, [Type | Acc]).
 
 -spec type_comment(binary(), openapi:schema(), openapi:generate_options()) -> binary().
@@ -83,8 +83,9 @@ type_comment(Name, Schema, Options) ->
   unicode:characters_to_binary(
     openapi_code:comment("%%", Text, 0, Options)).
 
--spec type_definition(openapi:schema()) -> binary().
-type_definition(#{type := object, properties := Props} = Schema) ->
+
+-spec schema_to_typespec(openapi:schema()) -> iodata().
+schema_to_typespec(#{type := object, properties := Props} = Schema) ->
   Required = maps:get(required, Schema, []),
   F = fun (Name, Schema2, Acc) ->
           Operator =
@@ -92,42 +93,42 @@ type_definition(#{type := object, properties := Props} = Schema) ->
               true -> " := ";
               false -> " => "
             end,
-          [[Name, Operator, type_definition(Schema2)] | Acc]
+          [[Name, Operator, schema_to_typespec(Schema2)] | Acc]
       end,
   Definition = maps:fold(F, [], Props),
-  ["#{", lists:join(", ", Definition), "}"];
-type_definition(#{type := object, nullable := true}) ->
+  [$#, ${, lists:join(", ", Definition), $}];
+schema_to_typespec(#{type := object, nullable := true}) ->
   "json:value() | null";
-type_definition(#{type := object}) ->
+schema_to_typespec(#{type := object}) ->
   "json:value()";
-type_definition(#{type := integer, nullable := true}) ->
+schema_to_typespec(#{type := integer, nullable := true}) ->
   "integer() | null";
-type_definition(#{type := integer}) ->
+schema_to_typespec(#{type := integer}) ->
   "integer()";
-type_definition(#{type := number, nullable := true}) ->
+schema_to_typespec(#{type := number, nullable := true}) ->
   "number() | null";
-type_definition(#{type := number}) ->
+schema_to_typespec(#{type := number}) ->
   "number()";
-type_definition(#{type := boolean, nullable := true}) ->
+schema_to_typespec(#{type := boolean, nullable := true}) ->
   "boolean() | null";
-type_definition(#{type := boolean}) ->
+schema_to_typespec(#{type := boolean}) ->
   "boolean()";
-type_definition(#{type := array} = Schema) ->
+schema_to_typespec(#{type := array} = Schema) ->
   case maps:find(items, Schema) of
     {ok, ItemSchema} ->
-      ["[", type_definition(ItemSchema), "]"];
+      [$[, schema_to_typespec(ItemSchema), $]];
     errors ->
       "list()"
   end;
-type_definition(#{type := string, enum := Enum}) ->
-  lists:join(" | ", lists:map(fun (X) -> ["'", X, "'"] end, Enum));
-type_definition(#{type := string, nullable := true}) ->
+schema_to_typespec(#{type := string, enum := Enum}) ->
+  lists:join(" | ", lists:map(fun (X) -> [$', X, $'] end, Enum));
+schema_to_typespec(#{type := string, nullable := true}) ->
   "binary() | null";
-type_definition(#{type := string}) ->
+schema_to_typespec(#{type := string}) ->
   "binary()";
-type_definition(#{'$ref' := Ref}) ->
+schema_to_typespec(#{'$ref' := Ref}) ->
   [lists:last(Ref), "()"];
-type_definition(_) ->
+schema_to_typespec(_) ->
   "json:value()".
 
 generate_openapi_file(Datetime, PackageName, Spec, Options) ->
