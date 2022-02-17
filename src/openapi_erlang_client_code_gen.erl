@@ -54,7 +54,7 @@ generate(Spec, OutDir, Options) ->
 generate_model_file(Datetime, PackageName, Spec, Options) ->
   Schemas = maps:get(schemas, maps:get(components, Spec, #{}), #{}),
   Data = #{datetime => Datetime,
-           package_name => <<PackageName/binary, "_model">>,
+           package_name => <<PackageName/binary, "_schemas">>,
            types => generate_types(Schemas, Options),
            functions => []},
   openapi_mustache:render(<<"erlang-client/model.erl">>, Data).
