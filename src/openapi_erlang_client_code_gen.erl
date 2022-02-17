@@ -135,6 +135,9 @@ type_definition(#{type := string, enum := Enum}, Size) ->
   end;
 type_definition(#{type := string}, _) ->
   <<"binary()">>;
+type_definition(#{'$ref' := Ref}, _) ->
+  Name = lists:last(Ref),
+  <<Name/binary, "()">>;
 type_definition(_, _) ->
   <<"json:value()">>.
 
