@@ -120,6 +120,8 @@ type_definition(#{type := object, nullable := true}, _) ->
   <<"json:value() | null">>;
 type_definition(#{type := object}, _) ->
   <<"json:value()">>;
+type_definition(#{type := integer, nullable := true}, _) ->
+  <<"integer() | null">>;
 type_definition(#{type := integer}, _) ->
   <<"integer()">>;
 type_definition(#{type := number}, _) ->
