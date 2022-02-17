@@ -120,6 +120,8 @@ schema_to_typespec(#{type := array} = Schema) ->
     errors ->
       "list()"
   end;
+schema_to_typespec(#{type := string, enum := Enum, nullable := true}) ->
+  lists:join(" | ", lists:map(fun (X) -> [$', X, $'] end, Enum ++ ["null"]));
 schema_to_typespec(#{type := string, enum := Enum}) ->
   lists:join(" | ", lists:map(fun (X) -> [$', X, $'] end, Enum));
 schema_to_typespec(#{type := string, nullable := true}) ->
