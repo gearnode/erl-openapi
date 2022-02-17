@@ -116,6 +116,8 @@ type_definition(#{type := object, properties := Props} = Schema, Indent) ->
       end,
   Definition = maps:fold(F, [], Props),
   unicode:characters_to_binary(["#{", lists:join([",\n", indent(Indent + 2)], Definition), "}"]);
+type_definition(#{type := object, nullable := true}, _) ->
+  <<"json:value() | null">>;
 type_definition(#{type := object}, _) ->
   <<"json:value()">>;
 type_definition(#{type := integer}, _) ->
