@@ -128,10 +128,10 @@ schema_to_typespec(#{type := string, nullable := true}) ->
   "binary() | null";
 schema_to_typespec(#{type := string}) ->
   "binary()";
-schema_to_typespec(#{'$ref' := Ref}) ->
-  [openapi_generator:to_snake_case(lists:last(Ref), #{}), "()"];
 schema_to_typespec(#{anyOf := Schemas}) ->
   lists:join(" | ", lists:map(fun schema_to_typespec/1, Schemas));
+schema_to_typespec(#{'$ref' := Ref}) ->
+  [openapi_generator:to_snake_case(lists:last(Ref), #{}), "()"];
 schema_to_typespec(_) ->
   "json:value()".
 
