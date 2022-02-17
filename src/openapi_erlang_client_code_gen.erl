@@ -113,6 +113,13 @@ schema_to_typespec(#{type := boolean, nullable := true}) ->
   "boolean() | null";
 schema_to_typespec(#{type := boolean}) ->
   "boolean()";
+schema_to_typespec(#{type := array, nullable := true} = Schema) ->
+  case maps:find(items, Schema) of
+    {ok, ItemSchema} ->
+      [$[, schema_to_typespec(ItemSchema), $], " | null"];
+    errors ->
+      "list() | null"
+  end;
 schema_to_typespec(#{type := array} = Schema) ->
   case maps:find(items, Schema) of
     {ok, ItemSchema} ->
