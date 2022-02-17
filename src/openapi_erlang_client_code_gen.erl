@@ -127,7 +127,7 @@ schema_to_typespec(#{type := string, nullable := true}) ->
 schema_to_typespec(#{type := string}) ->
   "binary()";
 schema_to_typespec(#{'$ref' := Ref}) ->
-  [lists:last(Ref), "()"];
+  [openapi_generator:to_snake_case(lists:last(Ref), #{}), "()"];
 schema_to_typespec(_) ->
   "json:value()".
 
