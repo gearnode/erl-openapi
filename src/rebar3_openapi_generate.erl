@@ -12,7 +12,7 @@
 %% ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
 %% IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
--module(rebar_openapi_generate).
+-module(rebar3_openapi_generate).
 
 -export([init/1, do/1, format_error/1]).
 
