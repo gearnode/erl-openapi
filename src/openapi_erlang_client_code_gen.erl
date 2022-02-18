@@ -46,10 +46,120 @@ generate(Spec, OutDir, Options) ->
 
   F1 = generate_openapi_file(Datetime, PackageName, Spec, Options),
   F2 = generate_model_file(Datetime, PackageName, Spec, Options),
+  F3 = generate_jsv_file(Datetime, PackageName, Spec, Options),
 
   file:write_file(filename:join(OutDir, <<PackageName/binary, "_openapi.erl">>), F1),
   file:write_file(filename:join(OutDir, <<PackageName/binary, "_schemas.erl">>), F2),
+  file:write_file(filename:join(OutDir, <<PackageName/binary, "_jsv.erl">>), F3),
   ok.
+
+
+generate_jsv_file(Datetime, PackageName, Spec, Options) ->
+  Schemas = maps:get(schemas, maps:get(components, Spec, #{}), #{}),
+  Data = #{datetime => Datetime,
+           package_name => <<PackageName/binary, "_jsv">>,
+           functions => generate_functions(Schemas, Options)},
+  openapi_mustache:render(<<"erlang-client/jsv.erl">>, Data).
+
+generate_functions(Schemas, Options) ->
+  Iterator = maps:iterator(Schemas),
+  generate_functions(maps:next(Iterator), Options, []).
+
+generate_functions(none, _, Acc) ->
+  lists:reverse(Acc);
+generate_functions({Name0, Schema, I}, Options, Acc) ->
+  Name = openapi_generator:to_snake_case(Name0, #{}),
+  Data = ["-spec ", Name, "_definition() -> jsv:definition().\n",
+   Name, "_definition() ->\n",
+   schema_to_jsv(Schema, Options), $.],
+  Func = unicode:characters_to_binary(Data),
+  generate_functions(maps:next(I), Options, [Func | Acc]).
+
+schema_to_jsv(#{type := number, nullable := true}, _) ->
+  "{one_of, [number, null]}";
+schema_to_jsv(#{type := number}, _) ->
+  "number";
+schema_to_jsv(#{type := integer, nullable := true}, _) ->
+  "{one_of, [integer, null]}";
+schema_to_jsv(#{type := integer}, _) ->
+  "integer";
+schema_to_jsv(#{type := boolean, nullable := true}, _) ->
+  "{one_of, [boolean, null]}";
+schema_to_jsv(#{type := boolean}, _) ->
+  "boolean";
+schema_to_jsv(#{type := string, enum := Values} = Schema, _) ->
+  A = lists:map(fun (X) -> [$', X, $'] end, Values),
+  B = lists:join(",", A),
+  C = ["{string, #{values => [", B, "]}}"],
+  case maps:get(nullable, Schema, false) of
+    true ->
+      ["{one_of, [", C, ", null]}"];
+    false ->
+      C
+  end;
+schema_to_jsv(#{type := string, nullable := true}, _) ->
+  "{one_of, [string, null]}";
+schema_to_jsv(#{type := string}, _) ->
+  "string";
+schema_to_jsv(#{'$ref' := Ref}, _) ->
+  ["{ref, ", openapi_generator:to_snake_case(lists:last(Ref), #{}), "}"];
+schema_to_jsv(#{type := array} = Schema, Options) ->
+  case maps:find(items, Schema) of
+    {ok, ItemSchemas} ->
+      ["{array, #{element =>" , schema_to_jsv(ItemSchemas, Options), "}}"];
+    error ->
+      "array"
+  end;
+schema_to_jsv(#{anyOf := Schemas}, Options) ->
+  A = lists:map(fun (X) -> schema_to_jsv(X, Options) end, Schemas),
+  B = lists:join(",", A),
+  ["{one_of, [", B, "]}"];
+schema_to_jsv(#{type := object} = Schema, Options) ->
+  MembersConstraint =
+    case maps:find(properties, Schema) of
+      {ok, Properties} ->
+        Members =
+          maps:fold(fun (MName, MSchema, Acc) ->
+                        MType = schema_to_jsv(MSchema, Options),
+                        [[openapi_gen:atom(MName), " => ", MType] | Acc]
+                    end, [], Properties),
+        Members2 = lists:join(", ", Members),
+        ["members => ", "#{", Members2, $}];
+      error ->
+        undefined
+    end,
+  RequiredConstraint =
+    case maps:find(required, Schema) of
+      {ok, Required} ->
+        Required2 = lists:join(", ", [openapi_gen:atom(M) || M <- Required]),
+        ["required =>  ", $[, Required2, $]];
+      error ->
+        undefined
+    end,
+  ValueConstraint =
+    case maps:find(additionalProperties, Schema) of
+      {ok, true} ->
+        ["value => any"];
+      {ok, false} ->
+        undefined;
+      {ok, AdditionalSchema} ->
+        Value = schema_to_jsv(AdditionalSchema, Options),
+        ["value => ", Value];
+      error ->
+        undefined
+      end,
+  Constraints0 = [MembersConstraint, RequiredConstraint, ValueConstraint],
+  Constraints = [C || C <- Constraints0, C /= undefined],
+  ConstraintsData = lists:join(", ", Constraints),
+  X = ["{object, #{", ConstraintsData, "}}"],
+  case maps:get(nullable, Schema, false) of
+    true ->
+      ["{one_of, [", X, ", null]}"];
+    false ->
+      X
+  end;
+schema_to_jsv(_, _) ->
+  ["any"].
 
 generate_model_file(Datetime, PackageName, Spec, Options) ->
   Schemas = maps:get(schemas, maps:get(components, Spec, #{}), #{}),
