@@ -68,7 +68,7 @@ generate_functions(Schemas, Options) ->
 generate_functions(none, _, Acc) ->
   lists:reverse(Acc);
 generate_functions({Name0, Schema, I}, Options, Acc) ->
-  Name = openapi_generator:to_snake_case(Name0, #{}),
+  Name = openapi_code:snake_case(Name0),
   Data = ["-spec ", Name, "_definition() -> jsv:definition().\n",
    Name, "_definition() ->\n",
    schema_to_jsv(Schema, Options), $.],
@@ -102,7 +102,7 @@ schema_to_jsv(#{type := string, nullable := true}, _) ->
 schema_to_jsv(#{type := string}, _) ->
   "string";
 schema_to_jsv(#{'$ref' := Ref}, _) ->
-  ["{ref, ", openapi_generator:to_snake_case(lists:last(Ref), #{}), "}"];
+  ["{ref, ", openapi_code:snake_case(lists:last(Ref)), "}"];
 schema_to_jsv(#{type := array} = Schema, Options) ->
   case maps:find(items, Schema) of
     {ok, ItemSchemas} ->
@@ -121,7 +121,7 @@ schema_to_jsv(#{type := object} = Schema, Options) ->
         Members =
           maps:fold(fun (MName, MSchema, Acc) ->
                         MType = schema_to_jsv(MSchema, Options),
-                        [[openapi_generator:to_snake_case(MName, #{}), " => ", MType] | Acc]
+                        [[openapi_code:snake_case(MName), " => ", MType] | Acc]
                     end, [], Properties),
         Members2 = lists:join(", ", Members),
         ["members => ", "#{", Members2, $}];
@@ -131,7 +131,7 @@ schema_to_jsv(#{type := object} = Schema, Options) ->
   RequiredConstraint =
     case maps:find(required, Schema) of
       {ok, Required} ->
-        Required2 = lists:join(", ", [openapi_generator:to_snake_case(M, #{}) || M <- Required]),
+        Required2 = lists:join(", ", [openapi_code:snake_case(M) || M <- Required]),
         ["required =>  ", $[, Required2, $]];
       error ->
         undefined
@@ -177,7 +177,7 @@ generate_types(none, _, Acc) ->
   lists:reverse(Acc);
 generate_types({Name, Schema, I}, Options, Acc) ->
   Type = #{comment => type_comment(Name, Schema, Options),
-           name => openapi_generator:to_snake_case(Name, #{}),
+           name => openapi_code:snake_case(Name),
            value => unicode:characters_to_binary(schema_to_typespec(Schema))},
   generate_types(maps:next(I), Options, [Type | Acc]).
 
@@ -248,7 +248,7 @@ schema_to_typespec(#{type := string}) ->
 schema_to_typespec(#{anyOf := Schemas}) ->
   lists:join(" | ", lists:map(fun schema_to_typespec/1, Schemas));
 schema_to_typespec(#{'$ref' := Ref}) ->
-  [openapi_generator:to_snake_case(lists:last(Ref), #{}), "()"];
+  [openapi_code:snake_case(lists:last(Ref)), "()"];
 schema_to_typespec(_) ->
   "json:value()".
 

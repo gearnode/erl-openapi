@@ -16,8 +16,7 @@
 
 -export_type([error_reason/0]).
 
--export([generate/3,
-         to_snake_case/2]).
+-export([generate/3]).
 
 -type error_reason() ::
         {unsupported_language, atom()}
@@ -45,24 +44,18 @@ generate(Data, OutDir,
       {error, {unsupported_language, Language}}
   end.
 
-to_snake_case(Bin, Inflection) ->
-  NewBin =
-    maps:fold(fun (SearchPattern, Replacement, String) ->
-                  string:replace(String, SearchPattern, Replacement, all)
-              end, Bin, Inflection),
-  iolist_to_binary(to_snake_case_1(iolist_to_binary(NewBin), [])).
-
-to_snake_case_1(<<>>, Acc) ->
-  lists:reverse(Acc);
-to_snake_case_1(<<".", Rest/binary>>, Acc) ->
-  to_snake_case_1(Rest, [$_ | Acc]);
-to_snake_case_1(<<"-", Rest/binary>>, Acc) ->
-  to_snake_case_1(Rest, [$_ | Acc]);
-to_snake_case_1(<<"_", Rest/binary>>, [$_ | _] = Acc) ->
-  to_snake_case_1(Rest, Acc);
-to_snake_case_1(<<C, Rest/binary>>, [$_ | _] = Acc) when C >= $A, C =< $Z ->
-  to_snake_case_1(Rest, [C + 32 | Acc]);
-to_snake_case_1(<<C, Rest/binary>>, Acc) when C >= $A, C =< $Z ->
-  to_snake_case_1(Rest, [[$_, C + 32] | Acc]);
-to_snake_case_1(<<A, Rest/binary>>, Acc) ->
-  to_snake_case_1(Rest, [A | Acc]).
+%% -
+%% --spec atom(binary()) -> binary().
+%% -atom(Name) ->
+%% -  case is_reserved_word(Name) of
+%% -    true ->
+%% -      quote_atom(Name);
+%% -    false ->
+%% -      case re:run(Name, "^[a-z][A-Za-z_@]*$") of
+%% -        {match, _} ->
+%% -          Name;
+%% -        nomatch ->
+%% -          quote_atom(Name)
+%% -      end
+%% -  end.
+%% -
