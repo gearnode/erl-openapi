@@ -227,14 +227,14 @@ schema_to_typespec(#{type := array, nullable := true} = Schema) ->
   case maps:find(items, Schema) of
     {ok, ItemSchema} ->
       [$[, schema_to_typespec(ItemSchema), $], " | null"];
-    errors ->
+    error ->
       "list() | null"
   end;
 schema_to_typespec(#{type := array} = Schema) ->
   case maps:find(items, Schema) of
     {ok, ItemSchema} ->
       [$[, schema_to_typespec(ItemSchema), $]];
-    errors ->
+    error ->
       "list()"
   end;
 schema_to_typespec(#{type := string, enum := Enum, nullable := true}) ->
