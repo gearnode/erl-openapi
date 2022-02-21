@@ -14,7 +14,7 @@
 
 -module(openapi_code).
 
--export([comment/4, snake_case/1]).
+-export([comment/4, snake_case/1, camel_case/1, pascal_case/1]).
 
 -spec comment(iodata(), iodata(), non_neg_integer(),
               openapi:generate_options()) ->
@@ -23,6 +23,14 @@ comment(Prefix, Text0, IdentSize, Options) ->
   FillColumn = maps:get(fill_column, Options, 74),
   Text = openapi_string:text_reflow(Text0, FillColumn),
   openapi_string:text_prefix(Prefix, Text, IdentSize).
+
+-spec pascal_case(binary()) -> binary().
+pascal_case(<<>>) ->
+  <<>>;
+pascal_case(<<C/utf8, Rest/binary>>) ->
+  C1 = string:to_upper(C),
+  C2 = camel_case(Rest),
+  <<C1/utf8, C2/binary>>.
 
 -spec camel_case(binary()) -> binary().
 camel_case(Name) ->
