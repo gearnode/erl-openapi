@@ -43,19 +43,3 @@ generate(Data, OutDir,
     error ->
       {error, {unsupported_language, Language}}
   end.
-
-%% -
-%% --spec atom(binary()) -> binary().
-%% -atom(Name) ->
-%% -  case is_reserved_word(Name) of
-%% -    true ->
-%% -      quote_atom(Name);
-%% -    false ->
-%% -      case re:run(Name, "^[a-z][A-Za-z_@]*$") of
-%% -        {match, _} ->
-%% -          Name;
-%% -        nomatch ->
-%% -          quote_atom(Name)
-%% -      end
-%% -  end.
-%% -
