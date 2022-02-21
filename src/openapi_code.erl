@@ -24,6 +24,19 @@ comment(Prefix, Text0, IdentSize, Options) ->
   Text = openapi_string:text_reflow(Text0, FillColumn),
   openapi_string:text_prefix(Prefix, Text, IdentSize).
 
+-spec camel_case(binary()) -> binary().
+camel_case(Name) ->
+  camel_case(Name, <<>>).
+
+-spec camel_case(binary(), binary()) -> binary().
+camel_case(<<>>, Acc) ->
+  Acc;
+camel_case(<<$_, C/utf8, Rest/binary>>, Acc) ->
+  C1 = string:to_upper(C),
+  camel_case(Rest, <<Acc/binary, C1/utf8>>);
+camel_case(<<C/utf8, Rest/binary>>, Acc) ->
+  camel_case(Rest, <<Acc/binary, C/utf8>>).
+
 -spec snake_case(binary()) -> binary().
 snake_case(Name) ->
   snake_case(Name, <<>>, undefined).
