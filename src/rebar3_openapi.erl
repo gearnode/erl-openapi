@@ -14,15 +14,12 @@
 
 -module(rebar3_openapi).
 
--export([init/1, do/1, format_error/1]).
+-export([init/1, format_error/1]).
 
 -spec init(rebar_state:t()) -> {ok, rebar_state:t()}.
 init(State0) ->
   {ok, State1} = rebar3_openapi_generate:init(State0),
   {ok, State1}.
-
-do(State) ->
-  {ok, State}.
 
 -spec format_error(any()) -> iolist().
 format_error(Reason) ->
