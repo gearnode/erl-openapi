@@ -14,6 +14,14 @@
 
 -module(openapi).
 
+-export([info/1,
+         servers/1,
+         paths/1,
+         components/1,
+         security/1,
+         tags/1,
+         external_docs/1]).
+
 -export([generate/3]).
 
 -export_type([generate_options/0,
@@ -317,6 +325,44 @@
           api_package => binary(),
           api_name_suffix => binary(),
           api_name_prefix => binary()}.
+
+-spec info(specification()) -> info().
+info(#{info := Info}) ->
+  Info.
+
+-spec servers(specification()) -> [server()].
+servers(#{servers := Servers}) ->
+  Servers;
+servers(_) ->
+  [].
+
+-spec paths(specification()) -> #{binary() := path()}.
+paths(#{paths := Paths}) ->
+  Paths.
+
+-spec components(specification()) -> #{} | components().
+components(#{components := Components}) ->
+  Components;
+components(_) ->
+  #{}.
+
+-spec security(specification()) -> [security_requirement()].
+security(#{security := SecurityRequirements}) ->
+  SecurityRequirements;
+security(_) ->
+  [].
+
+-spec tags(specification()) -> [tag()].
+tags(#{tags := Tags}) ->
+  Tags;
+tags(_) ->
+  [].
+
+-spec external_docs(specification()) -> #{} | external_documentation().
+external_docs(#{externalDocs := ExternalDocs}) ->
+  ExternalDocs;
+external_docs(_) ->
+  #{}.
 
 -spec generate(file:name_all(), file:name_all(), generate_options()) ->
         ok | {error, error_reason()}.
