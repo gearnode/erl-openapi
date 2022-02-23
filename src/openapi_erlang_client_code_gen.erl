@@ -55,7 +55,7 @@ generate(Spec, OutDir, Options) ->
 
 
 generate_jsv_file(Datetime, PackageName, Spec, Options) ->
-  Schemas = maps:get(schemas, maps:get(components, Spec, #{}), #{}),
+  Schemas = maps:get(schemas, openapi:components(Spec), #{}),
   Data = #{datetime => Datetime,
            package_name => <<PackageName/binary, "_jsv">>,
            functions => generate_functions(Schemas, Options)},
@@ -162,7 +162,7 @@ schema_to_jsv(_, _) ->
   ["any"].
 
 generate_model_file(Datetime, PackageName, Spec, Options) ->
-  Schemas = maps:get(schemas, maps:get(components, Spec, #{}), #{}),
+  Schemas = maps:get(schemas, openapi:components(Spec), #{}),
   Data = #{datetime => Datetime,
            package_name => <<PackageName/binary, "_schemas">>,
            types => generate_types(Schemas, Options),
