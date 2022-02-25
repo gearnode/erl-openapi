@@ -16,7 +16,7 @@
 
 -export([name/1, in/1, description/1, required/1, style/1, explode/1]).
 
--export([queries/1, paths/1, headers/1]).
+-export([queries/1, paths/1, headers/1, cookies/1]).
 
 -spec name(openapi:parameter()) -> binary().
 name(#{name := Name}) ->
@@ -71,3 +71,7 @@ paths(Parameters) ->
 -spec headers([openapi:parameter()]) -> [openapi:parameter()].
 headers(Parameters) ->
   lists:filter(fun (Parameter) -> in(Parameter) =:= header end, Parameters).
+
+-spec cookies([openapi:parameter()]) -> [openapi:parameter()].
+cookies(Parameters) ->
+  lists:filter(fun (Parameter) -> in(Parameter) =:= cookie end, Parameters).
