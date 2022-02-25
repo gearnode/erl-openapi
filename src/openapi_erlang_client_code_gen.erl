@@ -109,12 +109,13 @@ generate_client_functions(Paths, _Options) ->
                                                  Verb =:= options; Verb =:= head;
                                                  Verb =:= patch; Verb =:= trace ->
 
+                Id = openapi_operation:operation_id(OperationObject),
                 Parameters = openapi_operation:parameters(OperationObject),
+
                 QueryParameters = openapi_parameter:queries(Parameters),
                 PathParameters = openapi_parameter:paths(Parameters),
                 HeaderParameters = openapi_parameter:headers(Parameters),
                 Responses = openapi_operation:responses(OperationObject),
-                Id = openapi_operation:operation_id(OperationObject),
 
                 FuncName = openapi_code:snake_case(Id),
                 ArgType = "map()",
