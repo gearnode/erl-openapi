@@ -3,6 +3,10 @@
 -module({{package_name}}).
 
 {{#functions}}
-{{.}}
+-export([{{name}}/0]).
+{{/functions}}
+
+{{#functions}}
+{{func}}
 
 {{/functions}}

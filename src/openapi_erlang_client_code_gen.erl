@@ -73,7 +73,8 @@ generate_functions({Name0, Schema, I}, Options, Acc) ->
    Name, "_definition() ->\n",
    schema_to_jsv(Schema, Options), $.],
   Func = unicode:characters_to_binary(Data),
-  generate_functions(maps:next(I), Options, [Func | Acc]).
+  X = #{func => Func, name => <<Name/binary, "_definition">>},
+  generate_functions(maps:next(I), Options, [X | Acc]).
 
 schema_to_jsv(#{type := number, nullable := true}, _) ->
   "{one_of, [number, null]}";
