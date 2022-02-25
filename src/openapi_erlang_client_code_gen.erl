@@ -203,7 +203,7 @@ generate_client_functions(Paths, Options) ->
                   "case mhttp_response:status(Response) of\n",
                   maps:fold(
                     fun
-                      (StatusCode, ResponseObject, Acc3) when
+                      (StatusCode, _ResponseObject, Acc3) when
                           StatusCode =/= <<"default">> ->
                         [[StatusCode, " ->\n",
                           "{ok, Response};"] | Acc3];
