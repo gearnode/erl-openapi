@@ -122,7 +122,7 @@ schema_to_jsv(#{type := object} = Schema, Options) ->
         Members =
           maps:fold(fun (MName, MSchema, Acc) ->
                         MType = schema_to_jsv(MSchema, Options),
-                        [[openapi_code:snake_case(MName), " => ", MType] | Acc]
+                        [[$', openapi_code:snake_case(MName), $', " => ", MType] | Acc]
                     end, [], Properties),
         Members2 = lists:join(", ", Members),
         ["members => ", "#{", Members2, $}];
@@ -132,7 +132,7 @@ schema_to_jsv(#{type := object} = Schema, Options) ->
   RequiredConstraint =
     case maps:find(required, Schema) of
       {ok, Required} ->
-        Required2 = lists:join(", ", [openapi_code:snake_case(M) || M <- Required]),
+        Required2 = lists:join(", ", [[$', openapi_code:snake_case(M), $'] || M <- Required]),
         ["required =>  ", $[, Required2, $]];
       error ->
         undefined
