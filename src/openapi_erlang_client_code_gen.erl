@@ -155,7 +155,7 @@ generate_client_functions(Paths, Options) ->
                                        _Schema = maps:get(schema, ParameterObject),
                                        KeyName = openapi_code:snake_case(Name),
 
-                                       ["({", KeyName, ", Value}) ->\n",
+                                       ["({", KeyName, ", _Value}) ->\n",
                                         "{<<\"", KeyName, "\">>, <<>>}\n"]
                                    end, QueryParameters)),
                        "\nend,",
