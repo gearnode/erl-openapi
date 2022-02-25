@@ -75,12 +75,13 @@ generate(Spec, OutDir, Options) ->
 generate_client_file(Datetime, PackageName, Spec, Options) ->
   Paths = openapi:paths(Spec),
   Data = #{datetime => Datetime,
+           types => generate_client_function_request_types(Paths, Options),
            exported_functions => generate_client_function_names(Paths, Options),
            package_name => <<PackageName/binary, "_client">>,
            functions => generate_client_functions(Paths, Options)},
   openapi_mustache:render(<<"erlang-client/client.erl">>, Data).
 
-generate_client_function_names(Paths, Options) ->
+generate_client_function_names(Paths, _Options) ->
   maps:fold(
       fun (_Path, PathItemObject, Acc) ->
           maps:fold(
@@ -93,6 +94,89 @@ generate_client_function_names(Paths, Options) ->
                 [openapi_code:snake_case(Id) | Acc2]
             end, Acc, PathItemObject)
       end, [], Paths).
+
+generate_client_function_request_types(Paths, _Options) ->
+  maps:fold(
+    fun (_, PathItemObject, Acc) ->
+        maps:fold(
+          fun
+            (Verb, OperationObject, Acc2) when Verb =:= get; Verb =:= post;
+                                               Verb =:= put; Verb =:= delete;
+                                               Verb =:= options; Verb =:= head;
+                                               Verb =:= patch; Verb =:= trace ->
+              Id = openapi_operation:operation_id(OperationObject),
+              TypeName = [openapi_code:snake_case(Id), "_request"],
+              Parameters = openapi_operation:parameters(OperationObject),
+
+              QueryParameters = openapi_parameter:queries(Parameters),
+              PathParameters = openapi_parameter:paths(Parameters),
+              HeaderParameters = openapi_parameter:headers(Parameters),
+              CookieParameters = openapi_parameter:cookies(Parameters),
+              TypeDef =
+                ["-type ", TypeName, "() :: #{",
+                 lists:map(fun (X) ->
+                               Op = case openapi_parameter:required(X) of
+                                      true ->
+                                        " := ";
+                                      false ->
+                                        " => "
+                                    end,
+                               Name = openapi_parameter:name(X),
+                               KeyName = openapi_code:snake_case(Name),
+                               Schema = maps:get(schema, X),
+                               [KeyName, Op, schema_to_typespec(Schema), $,]
+                           end, PathParameters),
+                 "query => #{",
+                 lists:join(
+                   ", ",
+                   lists:map(fun (X) ->
+                                 Op = case openapi_parameter:required(X) of
+                                        true ->
+                                          " := ";
+                                        false ->
+                                          " => "
+                                      end,
+                                 Name = openapi_parameter:name(X),
+                                 KeyName = openapi_code:snake_case(Name),
+                                 Schema = maps:get(schema, X),
+                                 [KeyName, Op, schema_to_typespec(Schema)]
+                             end, QueryParameters)),
+                 "}, header => #{",
+                 lists:join(
+                   ", ",
+                   lists:map(fun (X) ->
+                                 Op = case openapi_parameter:required(X) of
+                                        true ->
+                                          " := ";
+                                        false ->
+                                          " => "
+                                      end,
+                                 Name = openapi_parameter:name(X),
+                                 KeyName = openapi_code:snake_case(Name),
+                                 Schema = maps:get(schema, X),
+                                 [KeyName, Op, schema_to_typespec(Schema)]
+                             end, HeaderParameters)),
+                 "}, cookie => #{",
+                 lists:join(
+                   ", ",
+                   lists:map(fun (X) ->
+                                 Op = case openapi_parameter:required(X) of
+                                        true ->
+                                          " := ";
+                                        false ->
+                                          " => "
+                                      end,
+                                 Name = openapi_parameter:name(X),
+                                 KeyName = openapi_code:snake_case(Name),
+                                 Schema = maps:get(schema, X),
+                                 [KeyName, Op, schema_to_typespec(Schema)]
+                             end, CookieParameters)),
+                 "},body => term()}."],
+              [#{name => unicode:characters_to_binary(TypeName), def => unicode:characters_to_binary(TypeDef)} | Acc2];
+            (_Key, _Value, Acc2) ->
+              Acc2
+          end, Acc, PathItemObject)
+    end, [], Paths).
 
 generate_client_functions(Paths, _Options) ->
   unicode:characters_to_binary(
@@ -115,69 +199,10 @@ generate_client_functions(Paths, _Options) ->
                 QueryParameters = openapi_parameter:queries(Parameters),
                 PathParameters = openapi_parameter:paths(Parameters),
                 HeaderParameters = openapi_parameter:headers(Parameters),
-                CookieParameters = openapi_parameter:cookies(Parameters),
                 Responses = openapi_operation:responses(OperationObject),
 
                 FuncName = openapi_code:snake_case(Id),
-                ArgType = ["#{",
-                           lists:map(fun (X) ->
-                                         Op = case openapi_parameter:required(X) of
-                                                true ->
-                                                  " := ";
-                                                false ->
-                                                  " => "
-                                              end,
-                                         Name = openapi_parameter:name(X),
-                                         KeyName = openapi_code:snake_case(Name),
-                                         Schema = maps:get(schema, X),
-                                         [KeyName, Op, schema_to_typespec(Schema), $,]
-                                     end, PathParameters),
-                           "query => #{",
-                           lists:join(
-                             ", ",
-                             lists:map(fun (X) ->
-                                           Op = case openapi_parameter:required(X) of
-                                                  true ->
-                                                    " := ";
-                                                  false ->
-                                                    " => "
-                                                end,
-                                           Name = openapi_parameter:name(X),
-                                           KeyName = openapi_code:snake_case(Name),
-                                           Schema = maps:get(schema, X),
-                                           [KeyName, Op, schema_to_typespec(Schema)]
-                                       end, QueryParameters)),
-                           "}, header => #{",
-                           lists:join(
-                             ", ",
-                             lists:map(fun (X) ->
-                                           Op = case openapi_parameter:required(X) of
-                                                  true ->
-                                                    " := ";
-                                                  false ->
-                                                    " => "
-                                                end,
-                                           Name = openapi_parameter:name(X),
-                                           KeyName = openapi_code:snake_case(Name),
-                                           Schema = maps:get(schema, X),
-                                           [KeyName, Op, schema_to_typespec(Schema)]
-                                       end, HeaderParameters)),
-                           "}, cookie => #{",
-                           lists:join(
-                             ", ",
-                             lists:map(fun (X) ->
-                                           Op = case openapi_parameter:required(X) of
-                                                  true ->
-                                                    " := ";
-                                                  false ->
-                                                    " => "
-                                                end,
-                                           Name = openapi_parameter:name(X),
-                                           KeyName = openapi_code:snake_case(Name),
-                                           Schema = maps:get(schema, X),
-                                           [KeyName, Op, schema_to_typespec(Schema)]
-                                       end, CookieParameters)),
-                           "},body => term()}"],
+                ArgType = [FuncName, "_request()"],
                 ReturnType = "term()",
 
                 ToSnakeCase =

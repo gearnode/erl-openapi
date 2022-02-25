@@ -6,6 +6,14 @@
 -export([{{.}}/1, {{.}}/2]).
 {{/exported_functions}}
 
+{{#types}}
+-export_type([{{name}}/0]).
+{{/types}}
+
+{{#types}}
+{{def}}
+{{/types}}
+
 {{#functions}}
 {{.}}
 {{/functions}}
