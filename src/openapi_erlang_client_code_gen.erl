@@ -112,67 +112,32 @@ generate_client_function_request_types(Paths, _Options) ->
               PathParameters = openapi_parameter:paths(Parameters),
               HeaderParameters = openapi_parameter:headers(Parameters),
               CookieParameters = openapi_parameter:cookies(Parameters),
+
+              F = fun (X) ->
+                      Op = case openapi_parameter:required(X) of
+                             true ->
+                               " := ";
+                             false ->
+                               " => "
+                           end,
+                      Name = openapi_parameter:name(X),
+                      KeyName = openapi_code:snake_case(Name),
+                      Schema = maps:get(schema, X),
+                      [KeyName, Op, schema_to_typespec(Schema)]
+                  end,
+
               TypeDef =
                 ["-type ", TypeName, "() :: #{",
-                 lists:map(fun (X) ->
-                               Op = case openapi_parameter:required(X) of
-                                      true ->
-                                        " := ";
-                                      false ->
-                                        " => "
-                                    end,
-                               Name = openapi_parameter:name(X),
-                               KeyName = openapi_code:snake_case(Name),
-                               Schema = maps:get(schema, X),
-                               [KeyName, Op, schema_to_typespec(Schema), $,]
-                           end, PathParameters),
-                 "query => #{",
                  lists:join(
                    ", ",
-                   lists:map(fun (X) ->
-                                 Op = case openapi_parameter:required(X) of
-                                        true ->
-                                          " := ";
-                                        false ->
-                                          " => "
-                                      end,
-                                 Name = openapi_parameter:name(X),
-                                 KeyName = openapi_code:snake_case(Name),
-                                 Schema = maps:get(schema, X),
-                                 [KeyName, Op, schema_to_typespec(Schema)]
-                             end, QueryParameters)),
-                 "}, header => #{",
-                 lists:join(
-                   ", ",
-                   lists:map(fun (X) ->
-                                 Op = case openapi_parameter:required(X) of
-                                        true ->
-                                          " := ";
-                                        false ->
-                                          " => "
-                                      end,
-                                 Name = openapi_parameter:name(X),
-                                 KeyName = openapi_code:snake_case(Name),
-                                 Schema = maps:get(schema, X),
-                                 [KeyName, Op, schema_to_typespec(Schema)]
-                             end, HeaderParameters)),
-                 "}, cookie => #{",
-                 lists:join(
-                   ", ",
-                   lists:map(fun (X) ->
-                                 Op = case openapi_parameter:required(X) of
-                                        true ->
-                                          " := ";
-                                        false ->
-                                          " => "
-                                      end,
-                                 Name = openapi_parameter:name(X),
-                                 KeyName = openapi_code:snake_case(Name),
-                                 Schema = maps:get(schema, X),
-                                 [KeyName, Op, schema_to_typespec(Schema)]
-                             end, CookieParameters)),
-                 "},body => term()}."],
-              [#{name => unicode:characters_to_binary(TypeName), def => unicode:characters_to_binary(TypeDef)} | Acc2];
+                   [["query => #{", lists:join(", ", lists:map(F, QueryParameters)), $}],
+                    ["header => #{", lists:join(", ", lists:map(F, HeaderParameters)), $}],
+                    ["cokkie => #{", lists:join(", ", lists:map(F, CookieParameters)), $}],
+                    ["body => term()"]] ++ lists:map(F, PathParameters)),
+                 "}."],
+
+              [#{name => unicode:characters_to_binary(TypeName),
+                 def => unicode:characters_to_binary(TypeDef)} | Acc2];
             (_Key, _Value, Acc2) ->
               Acc2
           end, Acc, PathItemObject)
