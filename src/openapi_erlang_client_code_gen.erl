@@ -205,7 +205,7 @@ generate_client_functions(Paths, _Options) ->
                   "Req = #{",
                   "method => ReqMethod,",
                   "header => ReqHeader,",
-                  "target => #{path => ReqPath, query => ReqQuery}",
+                  "target => #{path => iolist_to_binary(ReqPath), query => ReqQuery}",
                   "},",
 
                   "case mhttp:send_request(Req, Options) of\n",
