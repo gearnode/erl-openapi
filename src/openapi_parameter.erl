@@ -35,6 +35,8 @@ description(_) ->
 -spec required(openapi:parameter()) -> boolean().
 required(#{required := true}) ->
   true;
+required(#{in := path}) ->
+  true;
 required(_) ->
   false.
 
