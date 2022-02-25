@@ -131,7 +131,7 @@ generate_client_functions(Paths, _Options) ->
                   fun (#{name := Name}) -> openapi_code:snake_case(Name) end,
 
                 ToPascalCase =
-                  fun (Name) -> openapi_code:pascal_case(Name) end,
+                  fun (Name) -> ["Var", openapi_code:pascal_case(Name)] end,
 
                 ReqHeaderKeys =
                   lists:join(", ", lists:map(ToSnakeCase, HeaderParameters)),
