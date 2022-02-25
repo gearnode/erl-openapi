@@ -200,7 +200,7 @@ generate_client_functions(Paths, _Options) ->
                        "maps:to_list(maps:with([", ReqHeaderKeys, "], Args))),"]
                   end,
                   "ReqMethod = ", atom_to_binary(Verb), ",",
-                  "ReqBody = [],",
+                  "_ReqBody = [],",
                   "ReqPath = io_lib:format(\"", PathFormat, "\", [", PathArguments, "]),",
                   "Req = #{",
                   "method => ReqMethod,",
