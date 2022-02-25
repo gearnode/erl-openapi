@@ -146,7 +146,12 @@ generate_client_functions(Paths, _Options) ->
                   FuncName, "(Args, #{}).\n"],
                  $\n,
                  ["-spec ", FuncName, $(, ArgType, ", mhttp:request_options()) -> ", ReturnType, ".\n",
-                  FuncName,  "(Args, Options) ->", $\n,
+                  if
+                    length(Parameters) =:= 0 ->
+                      [FuncName,  "(_Args, Options) ->", $\n];
+                    true ->
+                      [FuncName,  "(Args, Options) ->", $\n]
+                  end,
                   lists:map(
                     fun (Parameter) ->
                         Name = maps:get(name, Parameter),
