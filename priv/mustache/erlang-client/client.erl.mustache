@@ -2,6 +2,10 @@
 
 -module({{package_name}}).
 
+{{#exported_functions}}
+-export([{{.}}/1, {{.}}/2]).
+{{/exported_functions}}
+
 {{#functions}}
 {{.}}
 {{/functions}}
