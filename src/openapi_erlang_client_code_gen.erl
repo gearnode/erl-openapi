@@ -85,7 +85,7 @@ generate_client_functions(Paths, Options) ->
           {PathFormat, VariablesNames} = openapi_path_template:parse(Path),
           %% TODO manage global parametgers not needed for stripe
           %% io:format("XXX ~p~n", [maps:get(parameters, PathItemObject, [])]),
-          io:format("XXX ~p~n", [Path]),
+          %% io:format("XXX ~p~n", [Path]),
           maps:fold(
             fun
               (Verb, OperationObject, Acc2) when Verb =:= get; Verb =:= post;
