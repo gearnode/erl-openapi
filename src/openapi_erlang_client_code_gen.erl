@@ -89,8 +89,8 @@ generate_client_function_names(Paths, Options) ->
                                                  Verb =:= put; Verb =:= delete;
                                                  Verb =:= options; Verb =:= head;
                                                  Verb =:= patch; Verb =:= trace ->
-                OperationId = maps:get(operationId, OperationObject),
-                [openapi_code:snake_case(OperationId) | Acc2]
+                Id = openapi_operation:operation_id(OperationObject),
+                [openapi_code:snake_case(Id) | Acc2]
             end, Acc, PathItemObject)
       end, [], Paths).
 
