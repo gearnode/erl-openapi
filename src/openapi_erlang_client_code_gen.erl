@@ -199,7 +199,7 @@ generate_client_functions(Paths, Options) ->
                   "case mhttp_header:find(Header, <<\"Content-Type\">>) of\n",
                   "{ok, HeaderValue} ->\n",
                   "case mhttp_media_type:parse(HeaderValue) of\n",
-                  "{ok, MediaType} -> \n",
+                  "{ok, _MediaType} -> \n",
                   "case mhttp_response:status(Response) of\n",
                   maps:fold(
                     fun
