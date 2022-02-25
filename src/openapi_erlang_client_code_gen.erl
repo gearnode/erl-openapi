@@ -51,6 +51,10 @@ generate(Spec, OutDir, Options) ->
   file:write_file(filename:join(OutDir, <<PackageName/binary, "_openapi.erl">>), F1),
   file:write_file(filename:join(OutDir, <<PackageName/binary, "_schemas.erl">>), F2),
   file:write_file(filename:join(OutDir, <<PackageName/binary, "_jsv.erl">>), F3),
+  X = rebar3_formatter:new(default_formatter, #{output_dir => "src", action => format}, undefined),
+  rebar3_formatter:format_file(binary_to_list(filename:join(OutDir, <<PackageName/binary, "_openapi.erl">>)), X),
+  rebar3_formatter:format_file(binary_to_list(filename:join(OutDir, <<PackageName/binary, "_schemas.erl">>)), X),
+  rebar3_formatter:format_file(binary_to_list(filename:join(OutDir, <<PackageName/binary, "_jsv.erl">>)), X),
   ok.
 
 

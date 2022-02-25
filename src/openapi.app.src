@@ -23,6 +23,7 @@
     syntax_tools,
     uri,
     json,
+    rebar3_format,
     mustache,
     jsv]},
   {env, []},

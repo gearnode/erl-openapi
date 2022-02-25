@@ -1,3 +1,4 @@
+{"1.2.0",
 [{<<"json">>,
   {git,"https://github.com/exograd/erl-json.git",
        {ref,"03e41ec0d6ae577652bbe90d9c66ccbf74b57a1c"}},
@@ -6,6 +7,7 @@
   {git,"https://github.com/exograd/erl-jsv.git",
        {ref,"451bea7ea4d68689cb9d765935bfe1097c31ec97"}},
   0},
+ {<<"katana_code">>,{pkg,<<"katana_code">>,<<"1.2.0">>},1},
  {<<"ksuid">>,
   {git,"https://github.com/exograd/erl-ksuid.git",
        {ref,"df2e1efb9a39efb4c58bb47be97a223a4119019b"}},
@@ -14,6 +16,10 @@
   {git,"https://github.com/exograd/erl-mustache.git",
        {ref,"bb8f8f7a5b32c61a3e776f9121b6e00fadba8f22"}},
   0},
+ {<<"rebar3_format">>,
+  {git,"https://github.com/AdRoll/rebar3_format.git",
+       {ref,"f3e0ffe4dca7368da396dd543fecf11207c8fa9d"}},
+  0},
  {<<"uri">>,
   {git,"https://github.com/exograd/erl-uri.git",
        {ref,"4d217279c3c850a5a02a9cc9e0d9881646d658e6"}},
@@ -21,4 +27,10 @@
  {<<"uuid">>,
   {git,"https://github.com/exograd/erl-uuid.git",
        {ref,"a3e876ed2fe46d04891574caf18bc49350b1a578"}},
-  1}].
+  1}]}.
+[
+{pkg_hash,[
+ {<<"katana_code">>, <<"FD90770D1414158D4C08811C3D893F27DD1BEFE493D0F13B5B011AD55E7B98F2">>}]},
+{pkg_hash_ext,[
+ {<<"katana_code">>, <<"CD1D1E37E5568698432FAC9A9DE0D283B80A1F0EE7BE8B8B94CA144FAC469E95">>}]}
+].
