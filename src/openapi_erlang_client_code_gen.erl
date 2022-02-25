@@ -110,21 +110,9 @@ generate_client_functions(Paths, _Options) ->
                                                  Verb =:= patch; Verb =:= trace ->
 
                 Parameters = openapi_operation:parameters(OperationObject),
-                QueryParameters =
-                  lists:filter(fun (X) ->
-                                   openapi_parameter:in(X) =:= query
-                               end, Parameters),
-
-                PathParameters =
-                  lists:filter(fun (X) ->
-                                   openapi_parameter:in(X) =:= path
-                               end, Parameters),
-
-                HeaderParameters =
-                  lists:filter(fun (X) ->
-                                   openapi_parameter:in(X) =:= header
-                               end, Parameters),
-
+                QueryParameters = openapi_parameter:queries(Parameters),
+                PathParameters = openapi_parameter:paths(Parameters),
+                HeaderParameters = openapi_parameter:headers(Parameters),
                 Responses = openapi_operation:responses(OperationObject),
                 Id = openapi_operation:operation_id(OperationObject),
 

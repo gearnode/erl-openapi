@@ -16,6 +16,8 @@
 
 -export([name/1, in/1, description/1, required/1, style/1, explode/1]).
 
+-export([queries/1, paths/1, headers/1]).
+
 -spec name(openapi:parameter()) -> binary().
 name(#{name := Name}) ->
   Name.
@@ -55,3 +57,15 @@ explode(#{explode := true}) ->
   true;
 explode(_) ->
   false.
+
+-spec queries([openapi:parameter()]) -> [openapi:parameter()].
+queries(Parameters) ->
+  lists:filter(fun (Parameter) -> in(Parameter) =:= query end, Parameters).
+
+-spec paths([openapi:parameter()]) -> [openapi:parameter()].
+paths(Parameters) ->
+  lists:filter(fun (Parameter) -> in(Parameter) =:= path end, Parameters).
+
+-spec headers([openapi:parameter()]) -> [openapi:parameter()].
+headers(Parameters) ->
+  lists:filter(fun (Parameter) -> in(Parameter) =:= header end, Parameters).
