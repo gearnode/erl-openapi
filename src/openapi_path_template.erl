@@ -36,7 +36,7 @@ parse(<<${, Rest/binary>>, Format, Variables) ->
           Next(R, [C | Acc2])
       end,
   {VariableName, Rest2} = F(Rest, []),
-  parse(Rest2, ["%s" | Format], [iolist_to_binary(VariableName) | Variables]);
+  parse(Rest2, ["~s" | Format], [iolist_to_binary(VariableName) | Variables]);
 parse(<<C/utf8, Rest/binary>>, Format, Variables) ->
   parse(Rest, [C | Format], Variables).
 
