@@ -115,10 +115,69 @@ generate_client_functions(Paths, _Options) ->
                 QueryParameters = openapi_parameter:queries(Parameters),
                 PathParameters = openapi_parameter:paths(Parameters),
                 HeaderParameters = openapi_parameter:headers(Parameters),
+                CookieParameters = openapi_parameter:cookies(Parameters),
                 Responses = openapi_operation:responses(OperationObject),
 
                 FuncName = openapi_code:snake_case(Id),
-                ArgType = "map()",
+                ArgType = ["#{",
+                           lists:map(fun (X) ->
+                                         Op = case openapi_parameter:required(X) of
+                                                true ->
+                                                  " := ";
+                                                false ->
+                                                  " => "
+                                              end,
+                                         Name = openapi_parameter:name(X),
+                                         KeyName = openapi_code:snake_case(Name),
+                                         Schema = maps:get(schema, X),
+                                         [KeyName, Op, schema_to_typespec(Schema), $,]
+                                     end, PathParameters),
+                           "query => #{",
+                           lists:join(
+                             ", ",
+                             lists:map(fun (X) ->
+                                           Op = case openapi_parameter:required(X) of
+                                                  true ->
+                                                    " := ";
+                                                  false ->
+                                                    " => "
+                                                end,
+                                           Name = openapi_parameter:name(X),
+                                           KeyName = openapi_code:snake_case(Name),
+                                           Schema = maps:get(schema, X),
+                                           [KeyName, Op, schema_to_typespec(Schema)]
+                                       end, QueryParameters)),
+                           "}, header => #{",
+                           lists:join(
+                             ", ",
+                             lists:map(fun (X) ->
+                                           Op = case openapi_parameter:required(X) of
+                                                  true ->
+                                                    " := ";
+                                                  false ->
+                                                    " => "
+                                                end,
+                                           Name = openapi_parameter:name(X),
+                                           KeyName = openapi_code:snake_case(Name),
+                                           Schema = maps:get(schema, X),
+                                           [KeyName, Op, schema_to_typespec(Schema)]
+                                       end, HeaderParameters)),
+                           "}, cookie => #{",
+                           lists:join(
+                             ", ",
+                             lists:map(fun (X) ->
+                                           Op = case openapi_parameter:required(X) of
+                                                  true ->
+                                                    " := ";
+                                                  false ->
+                                                    " => "
+                                                end,
+                                           Name = openapi_parameter:name(X),
+                                           KeyName = openapi_code:snake_case(Name),
+                                           Schema = maps:get(schema, X),
+                                           [KeyName, Op, schema_to_typespec(Schema)]
+                                       end, CookieParameters)),
+                           "},body => term()}"],
                 ReturnType = "term()",
 
                 ToSnakeCase =
