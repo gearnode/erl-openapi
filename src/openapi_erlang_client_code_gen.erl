@@ -34,6 +34,7 @@
 
 -export([generate/3]).
 
+
 %% -spec atom(binary()) -> binary().
 %% atom(Name) ->
 %%   case re:run(Name, "^[a-z][A-Za-z_@]*$") of
@@ -108,22 +109,26 @@ generate_client_functions(Paths, _Options) ->
                                                  Verb =:= options; Verb =:= head;
                                                  Verb =:= patch; Verb =:= trace ->
 
-                Parameters = maps:get(parameters, OperationObject, []),
-                QueryParameters = lists:filter(
-                                    fun (#{in := query}) -> true;
-                                        (_) -> false
-                                    end, Parameters),
-                PathParameters = lists:filter(
-                                   fun (#{in := path}) -> true;
-                                       (_) -> false
-                                   end, Parameters),
-                HeaderParameters = lists:filter(
-                                     fun (#{in := header}) -> true;
-                                         (_) -> false
-                                     end, Parameters),                Responses = maps:get(responses, OperationObject, #{}),
+                Parameters = openapi_operation:parameters(OperationObject),
+                QueryParameters =
+                  lists:filter(fun (X) ->
+                                   openapi_parameter:in(X) =:= query
+                               end, Parameters),
 
-                OperationId = maps:get(operationId, OperationObject),
-                FuncName = openapi_code:snake_case(OperationId),
+                PathParameters =
+                  lists:filter(fun (X) ->
+                                   openapi_parameter:in(X) =:= path
+                               end, Parameters),
+
+                HeaderParameters =
+                  lists:filter(fun (X) ->
+                                   openapi_parameter:in(X) =:= header
+                               end, Parameters),
+
+                Responses = openapi_operation:responses(OperationObject),
+                Id = openapi_operation:operation_id(OperationObject),
+
+                FuncName = openapi_code:snake_case(Id),
                 ArgType = "map()",
                 ReturnType = "term()",
 
@@ -191,10 +196,29 @@ generate_client_functions(Paths, _Options) ->
                          ";\n",
                          lists:map(fun (ParameterObject) ->
                                        Name = maps:get(name, ParameterObject),
-                                       _Style = maps:get(style, ParameterObject, form),
-                                       _Explode = maps:get(explode, ParameterObject, false),
-                                       _Schema = maps:get(schema, ParameterObject),
+                                       Style = maps:get(style, ParameterObject, form),
+                                       Explode = maps:get(explode, ParameterObject, false),
+                                       Schema = maps:get(schema, ParameterObject),
+                                       SchemaType = maps:get(type, Schema),
                                        KeyName = openapi_code:snake_case(Name),
+
+                                       case Style of
+                                         form ->
+                                           case Explode of
+                                             true ->
+                                               ok;
+                                             false ->
+                                               ok
+                                           end;
+                                         spaceDelimited ->
+                                           ok;
+                                         pipeDelimited ->
+                                           ok;
+                                         pipeDelimited ->
+                                           ok;
+                                         deepObject ->
+                                           ok
+                                       end,
 
                                        ["({", KeyName, ", Value}) ->\n",
                                         "{<<\"", KeyName, "\">>, <<>>}\n"]
