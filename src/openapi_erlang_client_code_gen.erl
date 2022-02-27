@@ -132,7 +132,7 @@ generate_client_function_request_types(Paths, _Options) ->
                    ", ",
                    [["query => #{", lists:join(", ", lists:map(F, QueryParameters)), $}],
                     ["header => #{", lists:join(", ", lists:map(F, HeaderParameters)), $}],
-                    ["cokkie => #{", lists:join(", ", lists:map(F, CookieParameters)), $}],
+                    ["cookie => #{", lists:join(", ", lists:map(F, CookieParameters)), $}],
                     ["body => term()"]] ++ lists:map(F, PathParameters)),
                  "}."],
 
