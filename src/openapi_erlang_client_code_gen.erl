@@ -130,9 +130,27 @@ generate_client_function_request_types(Paths, _Options) ->
                 ["-type ", TypeName, "() :: #{",
                  lists:join(
                    ", ",
-                   [["query => #{", lists:join(", ", lists:map(F, QueryParameters)), $}],
-                    ["header => #{", lists:join(", ", lists:map(F, HeaderParameters)), $}],
-                    ["cookie => #{", lists:join(", ", lists:map(F, CookieParameters)), $}],
+                   [["query => ",
+                     if
+                       length(QueryParameters) =:= 0 ->
+                         "map()";
+                       true ->
+                         ["#{", lists:join(", ", lists:map(F, QueryParameters)), $}]
+                     end],
+                    ["header => ",
+                     if
+                       length(HeaderParameters) =:= 0 ->
+                         "map()";
+                       true ->
+                         ["#{", lists:join(", ", lists:map(F, HeaderParameters)), $}]
+                    end],
+                    ["cookie => ",
+                     if
+                       length(CookieParameters) =:= 0 ->
+                         "map()";
+                       true ->
+                         ["#{", lists:join(", ", lists:map(F, CookieParameters)), $}]
+                     end],
                     ["body => term()"]] ++ lists:map(F, PathParameters)),
                  "}."],
 
