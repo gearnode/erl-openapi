@@ -241,7 +241,7 @@ generate_client_functions(Paths, _Options) ->
                                         Encode, "\n"]
                                    end, QueryParameters)),
                        "\nend,",
-                       "ReqQuery = lists:map(EncodeQuery,\n",
+                       "ReqQuery = lists:flatmap(EncodeQuery,\n",
                        "maps:to_list(maps:with([", ReqQueryKeys, "], Args))),"]
                   end,
                   if
