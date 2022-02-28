@@ -65,7 +65,12 @@ encode_q(form, false, Key, Values) when is_list(Values) ->
 encode_q(form, false, Key, Values) when is_map(Values) ->
   Values1 =
     maps:fold(
-      fun (K, V, Acc) ->
-          []
+      fun
+        (K, V, Acc) when is_binary(V) ->
+          [[K, $,, V] | Acc];
+        (K, V, Acc) when is_integer(V) ->
+          [[K, $,, integer_to_binary(V)] | Acc];
+        (K, V, Acc) when is_atom(V) ->
+          [[K, $,, atom_to_binary(V)] | Acc]
       end, [], Values),
-  [{Key, Values1}].
+  [{Key, unicode:characters_to_binary(lists:join(",", Values1))}].
