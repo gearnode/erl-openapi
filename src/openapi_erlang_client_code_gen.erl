@@ -349,7 +349,7 @@ generate_jsv_file(Datetime, PackageName, Spec, Options) ->
   openapi_mustache:render(<<"erlang-client/jsv.erl">>, Data).
 
 
-generate_jsv_catalog(Schemas, Options) ->
+generate_jsv_catalog(Schemas, _Options) ->
   Values =
     maps:fold(fun (Name0, _, Acc) ->
                   Name = openapi_code:snake_case(Name0),
