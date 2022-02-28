@@ -251,36 +251,18 @@ generate_client_functions(Paths, _Options) ->
                       ["EncodeHeader = fun\n",
                        lists:join(
                          ";\n",
-                         lists:map(fun (ParameterObject) ->
-                                       Name = openapi_parameter:name(ParameterObject),
-                                       %% Style = maps:get(style, ParameterObject, form),
-                                       %% Explode = maps:get(explode, ParameterObject, false),
-                                       %% Schema = maps:get(schema, ParameterObject),
-                                       %% SchemaType = maps:get(type, Schema),
-                                       KeyName = openapi_code:snake_case(Name),
+                         lists:map(
+                           fun (ParameterObject) ->
+                               Name = openapi_parameter:name(ParameterObject),
+                               %% Style = maps:get(style, ParameterObject, form),
+                               %% Explode = maps:get(explode, ParameterObject, false),
+                               %% Schema = maps:get(schema, ParameterObject),
+                               %% SchemaType = maps:get(type, Schema),
+                               KeyName = openapi_code:snake_case(Name),
 
-                                       %% case Style of
-                                       %%   form ->
-                                       %%     case Explode of
-                                       %%       true ->
-                                       %%         ok;
-                                       %%       false ->
-                                       %%         ok
-                                       %%     end;
-                                       %%   spaceDelimited ->
-                                       %%     ok;
-                                       %%   pipeDelimited ->
-                                       %%     ok;
-                                       %%   pipeDelimited ->
-                                       %%     ok;
-                                       %%   deepObject ->
-                                       %%     ok
-                                       %% end,
-
-                                       ["({", KeyName, ", Value}) ->\n",
-                                        "{<<\"", KeyName, "\">>, <<>>}\n"]
-                                   end, HeaderParameters)),
-
+                               ["({", KeyName, ", Value}) ->\n",
+                                "{<<\"", KeyName, "\">>, <<>>}\n"]
+                           end, HeaderParameters)),
                       "\nend,",
                       "ReqHeader = lists:map(EncodeHeader,\n",
                        "maps:to_list(maps:with([", ReqHeaderKeys, "], Args))),"]
