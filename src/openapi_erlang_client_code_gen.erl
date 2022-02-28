@@ -554,7 +554,7 @@ schema_to_typespec(#{'$ref' := Ref}) ->
 schema_to_typespec(_) ->
   "json:value()".
 
-generate_openapi_file(Datetime, PackageName, Spec, Options) ->
+generate_openapi_file(Datetime, PackageName, Spec, _Options) ->
   Data = #{datetime => Datetime,
            package_name => <<PackageName/binary, "_openapi">>,
            functions => [info_fun_0(Spec), servers_fun_0(Spec)]},
