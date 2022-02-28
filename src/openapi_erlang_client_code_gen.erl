@@ -231,13 +231,14 @@ generate_client_functions(Paths, _Options) ->
                          ";\n",
                          lists:map(fun (ParameterObject) ->
                                        Name = openapi_parameter:name(ParameterObject),
-                                       %% _Style = maps:get(style, ParameterObject, form),
-                                       %% _Explode = maps:get(explode, ParameterObject, false),
-                                       %% _Schema = maps:get(schema, ParameterObject),
+                                       Style = maps:get(style, ParameterObject, form),
+                                       Explode = maps:get(explode, ParameterObject, false),
                                        KeyName = openapi_code:snake_case(Name),
+                                       Encode = io_lib:format("encode_q(~s, ~s, <<\"~s\">>, ~s)",
+                                                              [Style, Explode, KeyName, "Value"]),
 
-                                       ["({", KeyName, ", _Value}) ->\n",
-                                        "{<<\"", KeyName, "\">>, <<>>}\n"]
+                                       ["({", KeyName, ", Value}) ->\n",
+                                        Encode, "\n"]
                                    end, QueryParameters)),
                        "\nend,",
                        "ReqQuery = lists:map(EncodeQuery,\n",

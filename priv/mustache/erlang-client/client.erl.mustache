@@ -17,3 +17,55 @@
 {{#functions}}
 {{.}}
 {{/functions}}
+
+-spec encode_q(Style, Explode, Key, Value) -> term()
+          when Style :: form | spaceDelimitde | pipeDelimited | deepObject,
+               Explode :: boolean(),
+               Key :: binary(),
+               Value :: term().
+encode_q(form, true, Key, Value) when is_binary(Value) ->
+  [{Key, Value}];
+encode_q(form, true, Key, Value) when is_integer(Value) ->
+  [{Key, integer_to_binary(Value)}];
+encode_q(form, true, Key, Value) when is_atom(Value) ->
+  [{Key, atom_to_binary(Value)}];
+encode_q(form, true, Key, Values) when is_list(Values) ->
+  lists:map(
+    fun
+      (Value) when is_binary(Value) -> {Key, Value};
+      (Value) when is_integer(Value) -> {Key, integer_to_binary(Value)};
+      (Value) when is_atom(Value) -> {Key, atom_to_binary(Value)}
+    end, Values);
+encode_q(form, true, _Key, Values) when is_map(Values) ->
+  maps:fold(
+    fun
+      (Key, Value, Acc) when is_binary(Value) ->
+        [{Key, Value} | Acc];
+      (Key, Value, Acc) when is_integer(Value) ->
+        [{Key, integer_to_binary(Value)} | Acc];
+      (Key, Value, Acc) when is_atom(Value) ->
+        [{Key, atom_to_binary(Key)} | Acc]
+    end, [], Values);
+
+encode_q(form, false, Key, Value) when is_binary(Value) ->
+  [{Key, Value}];
+encode_q(form, false, Key, Value) when is_integer(Value) ->
+  [{Key, integer_to_binary(Value)}];
+encode_q(form, false, Key, Value) when is_atom(Value) ->
+  [{Key, atom_to_binary(Value)}];
+encode_q(form, false, Key, Values) when is_list(Values) ->
+  Values1 =
+    lists:map(
+      fun
+        (Value) when is_binary(Value) -> Value;
+        (Value) when is_integer(Value) -> integer_to_binary(Value);
+        (Value) when is_atom(Value) -> atom_to_binary(Value)
+      end, Values),
+  [{Key, unicode:characters_to_binary(lists:join(",", Values1))}];
+encode_q(form, false, Key, Values) when is_map(Values) ->
+  Values1 =
+    maps:fold(
+      fun (K, V, Acc) ->
+          []
+      end, [], Values),
+  [{Key, Values1}].
