@@ -73,4 +73,15 @@ encode_q(form, false, Key, Values) when is_map(Values) ->
         (K, V, Acc) when is_atom(V) ->
           [[K, $,, atom_to_binary(V)] | Acc]
       end, [], Values),
-  [{Key, unicode:characters_to_binary(lists:join(",", Values1))}].
+  [{Key, unicode:characters_to_binary(lists:join(",", Values1))}];
+
+encode_q(deepObject, true, Key, Values) when is_map(Values) ->
+  maps:fold(
+    fun
+      (K, V, Acc) when is_binary(V) ->
+        [{<<Key/binary, $[, K/binary, $]>>, V} | Acc];
+      (K, V, Acc) when is_integer(V) ->
+        [{<<Key/binary, $[, K/binary, $]>>, integer_to_binary(V)} | Acc];
+      (K, V, Acc) when is_atom(V) ->
+        [{<<Key/binary, $[, K/binary, $]>>, atom_to_binary(V)} | Acc]
+    end, [], Values).
