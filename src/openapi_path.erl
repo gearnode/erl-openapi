@@ -16,6 +16,8 @@
 
 -export([summary/1, description/1, parameters/1, servers/1]).
 
+-export([operations/1]).
+
 -spec summary(openapi:path()) -> binary().
 summary(#{summary := Summary}) ->
   Summary;
@@ -39,3 +41,18 @@ servers(#{servers := Servers}) ->
   Servers;
 servers(_) ->
   [].
+
+-spec operations(openapi:path()) -> [{Verb, openapi:operation()}]
+          when Verb :: get | put | post | delete | options |
+                       head | patch | trace.
+operations(PathItemObject) ->
+  OperationKeys = [get, put, post, delete, options, head, patch, trace],
+  lists:foldl(
+    fun (K, Acc) ->
+        case maps:find(K, PathItemObject) of
+          {ok, Operation} ->
+            [{K, Operation} | Acc];
+          error ->
+            Acc
+        end
+    end, [], OperationKeys).
