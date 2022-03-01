@@ -75,13 +75,34 @@ encode_q(form, false, Key, Values) when is_map(Values) ->
       end, [], Values),
   [{Key, unicode:characters_to_binary(lists:join(",", Values1))}];
 
+%% deepObject MUST not encode primary or array value but Stripe use this style
+%% to encode query parameter. So I'm force to extend the spec.
+encode_q(deepObject, true, Key, Value) when is_binary(Value) ->
+  [{Key, Value}];
+encode_q(deepObject, true, Key, Value) when is_integer(Value) ->
+  [{Key, integer_to_binary(Value)}];
+encode_q(deepObject, true, Key, Value) when is_atom(Value) ->
+  [{Key, atom_to_binary(Value)}];
+encode_q(deepObject, true, Key, Values) when is_list(Values) ->
+  lists:map(
+    fun
+      (Value) when is_binary(Value)->
+        {<<Key/binary, "[]">>, Value};
+      (Value) when is_integer(Value) ->
+        {<<Key/binary, "[]">>, integer_to_binary(Value)};
+      (Value) when is_atom(Value) ->
+        {<<Key/binary, "[]">>, atom_to_binary(Value)}
+    end, Values);
 encode_q(deepObject, true, Key, Values) when is_map(Values) ->
   maps:fold(
     fun
       (K, V, Acc) when is_binary(V) ->
-        [{<<Key/binary, $[, K/binary, $]>>, V} | Acc];
+        K2 = atom_to_binary(K),
+        [{<<Key/binary, $[, K2/binary, $]>>, V} | Acc];
       (K, V, Acc) when is_integer(V) ->
-        [{<<Key/binary, $[, K/binary, $]>>, integer_to_binary(V)} | Acc];
+        K2 = atom_to_binary(K),
+        [{<<Key/binary, $[, K2/binary, $]>>, integer_to_binary(V)} | Acc];
       (K, V, Acc) when is_atom(V) ->
-        [{<<Key/binary, $[, K/binary, $]>>, atom_to_binary(V)} | Acc]
+        K2 = atom_to_binary(K),
+        [{<<Key/binary, $[, K2/binary, $]>>, atom_to_binary(V)} | Acc]
     end, [], Values).
