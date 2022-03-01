@@ -242,7 +242,7 @@ generate_client_functions(Paths, _Options) ->
                                    end, QueryParameters)),
                        "\nend,",
                        "ReqQuery = lists:flatmap(EncodeQuery,\n",
-                       "maps:to_list(maps:with([", ReqQueryKeys, "], Args))),"]
+                       "maps:to_list(maps:with([", ReqQueryKeys, "], maps:get(query, Args, #{})))),"]
                   end,
                   if
                     length(HeaderParameters) =:= 0 ->
