@@ -168,13 +168,12 @@ generate_client_functions(Paths, _Options) ->
           {PathFormat, VariablesNames} = openapi_path_template:parse(Path),
           %% TODO manage global parametgers not needed for stripe
           %% io:format("XXX ~p~n", [maps:get(parameters, PathItemObject, [])]),
-          %% io:format("XXX ~p~n", [Path]),
-          maps:fold(
+          %% io:format("XXX ~p~n", [maps:get(securitySchemes]),
+
+          PathOperations = openapi_path:operations(PathItemObject),
+          lists:foldl(
             fun
-              (Verb, OperationObject, Acc2) when Verb =:= get; Verb =:= post;
-                                                 Verb =:= put; Verb =:= delete;
-                                                 Verb =:= options; Verb =:= head;
-                                                 Verb =:= patch; Verb =:= trace ->
+              ({Verb, OperationObject}, Acc2) ->
 
                 Id = openapi_operation:operation_id(OperationObject),
                 Parameters = openapi_operation:parameters(OperationObject),
@@ -319,9 +318,10 @@ generate_client_functions(Paths, _Options) ->
                   "{error, Reason} ->\n",
                   "{error, {mhttp, Reason}}\n",
                   "end.\n\n"] | Acc2];
-              (_Key, _Value, Acc2) ->
+                  %% "ok.\n\n"] | Acc2];
+              (_, Acc2) ->
                 Acc2
-            end, Acc, PathItemObject)
+            end, Acc, PathOperations)
       end, [], Paths)).
 
 generate_jsv_file(Datetime, PackageName, Spec, Options) ->
