@@ -83,7 +83,10 @@
         {ok, MediaTypeValue} ->
           case mhttp_media_type:parse(MediaTypeValue) of
             {ok, _} ->
-              {ok, Resp};
+              case mhttp_response:status(Resp) of
+                _ ->
+                  {ok, Resp}
+              end;
             {error, Reason} ->
               {error, {invalid_content_type, Reason}, Resp}
           end;
