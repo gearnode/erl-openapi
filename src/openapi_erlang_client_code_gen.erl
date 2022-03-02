@@ -205,7 +205,7 @@ generate_client_functions(Paths, Options) ->
                        fun (#{name := Name} = Parameter) ->
                            #{snake_name => openapi_code:snake_case(Name),
                              real_name => Name,
-                             style => maps:get(style, Parameter, form),
+                             style => maps:get(style, Parameter, simple),
                              explode => maps:get(explode, Parameter, false)}
                        end, HeaderParameters),
                    method => Verb,
