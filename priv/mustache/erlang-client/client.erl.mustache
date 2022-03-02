@@ -80,7 +80,7 @@
   end.
 @@/functions@@
 
--spec encode_q(Style, Explode, Key, Value) -> term()
+-spec encode_q(Style, Explode, Key, Value) -> uri:query()
           when Style :: form | spaceDelimitde | pipeDelimited | deepObject,
                Explode :: boolean(),
                Key :: binary(),
