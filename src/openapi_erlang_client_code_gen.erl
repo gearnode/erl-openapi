@@ -72,7 +72,7 @@ write_and_format_file(OutDir, Filename0, Content) ->
   State = rebar3_formatter:new(default_formatter,
                                #{output_dir => OutDir, action => format},
                                undefined),
-  file:write(Filename, Content),
+  file:write_file(Filename, Content),
   rebar3_formatter:format_file(Filename, State),
   ok.
 
