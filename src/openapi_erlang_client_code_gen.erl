@@ -76,24 +76,10 @@ generate_client_file(Datetime, PackageName, Spec, Options) ->
   Paths = openapi:paths(Spec),
   Data = #{datetime => Datetime,
            types => generate_client_function_request_types(Paths, Options),
-           exported_functions => generate_client_function_names(Paths, Options),
            package_name => <<PackageName/binary, "_client">>,
            functions => generate_client_functions(Paths, Options)},
   openapi_mustache:render(<<"erlang-client/client.erl">>, Data, #{disable_html_escaping => true}).
 
-generate_client_function_names(Paths, _Options) ->
-  maps:fold(
-      fun (_Path, PathItemObject, Acc) ->
-          maps:fold(
-            fun
-              (Verb, OperationObject, Acc2) when Verb =:= get; Verb =:= post;
-                                                 Verb =:= put; Verb =:= delete;
-                                                 Verb =:= options; Verb =:= head;
-                                                 Verb =:= patch; Verb =:= trace ->
-                Id = openapi_operation:operation_id(OperationObject),
-                [openapi_code:snake_case(Id) | Acc2]
-            end, Acc, PathItemObject)
-      end, [], Paths).
 
 generate_client_function_request_types(Paths, _Options) ->
   maps:fold(
