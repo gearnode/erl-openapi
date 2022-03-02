@@ -316,15 +316,8 @@
 -type generate_options() ::
         #{language := atom(),
           generator := atom(),
-          inflection => #{string() := string()},
-          fill_column => pos_integer(),
           package_name := binary(),
-          model_package => binary(),
-          model_name_suffix => binary(),
-          model_name_prefix => binary(),
-          api_package => binary(),
-          api_name_suffix => binary(),
-          api_name_prefix => binary()}.
+          default_host => binary()}.
 
 -spec info(specification()) -> info().
 info(#{info := Info}) ->

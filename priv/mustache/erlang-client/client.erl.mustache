@@ -9,13 +9,21 @@
 -export([@@.@@/1, @@.@@/2]).
 @@/exported_functions@@
 
+-export_type([options/0]).
 @@#types@@
 -export_type([@@name@@/0]).
 @@/types@@
 
+-type options() ::
+        #{http => mhttp:request_options(),
+          host => uri:host(),
+          scheme => uri:scheme(),
+          port => uri:port_number()}.
+
 @@#types@@
 @@def@@
 @@/types@@
+
 
 @@#functions@@
 -spec @@f_name@@(@@f_name@@_request()) ->
@@ -26,7 +34,7 @@
 @@f_name@@(Args) ->
   @@f_name@@(Args, #{}).
 
--spec @@f_name@@(@@f_name@@_request(), mhttp:request_options()) ->
+-spec @@f_name@@(@@f_name@@_request(), options()) ->
         {ok, mhttp:response()} |
         {error, {mhttp, mhttp:error_reason()}} |
         {error, missing_content_type, mhttp:response()} |
@@ -60,10 +68,15 @@
     lists:flatmap(EncodeQuery, maps:to_list(Query)),
   ReqHeader =
     lists:flatmap(EncodeHeader, maps:to_list(Header)),
+  ReqOptions = maps:get(http, Options, #{}),
   Req = #{method => @@method@@,
           header => ReqHeader,
-          target => #{path => iolist_to_binary(ReqPath), query => ReqQuery}},
-  case mhttp:send_request(Req, Options) of
+          target => #{scheme => maps:get(host, Options, <<"https">>),
+                      port => maps:get(port, Options, 443),
+                      host => maps:get(scheme, Options, <<"@@target_host@@">>),
+                      path => iolist_to_binary(ReqPath),
+                      query => ReqQuery}},
+  case mhttp:send_request(Req, ReqOptions) of
     {ok, Resp} ->
       RespHeader = mhttp_response:header(Resp),
       case mhttp_header:find(RespHeader, <<"Content-Type">>) of

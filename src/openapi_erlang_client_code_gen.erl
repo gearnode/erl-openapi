@@ -161,7 +161,7 @@ generate_client_function_request_types(Paths, _Options) ->
           end, Acc, PathItemObject)
     end, [], Paths).
 
-generate_client_functions(Paths, _Options) ->
+generate_client_functions(Paths, Options) ->
   %% unicode:characters_to_binary(
     maps:fold(
       fun (Path, PathItemObject, Acc) ->
@@ -209,6 +209,7 @@ generate_client_functions(Paths, _Options) ->
                              explode => maps:get(explode, Parameter, false)}
                        end, HeaderParameters),
                    method => Verb,
+                   target_host => maps:get(default_host, Options, <<>>),
                    path_format => unicode:characters_to_binary(PathFormat),
                    path_args =>
                      unicode:characters_to_binary(
