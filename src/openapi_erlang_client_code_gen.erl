@@ -157,9 +157,9 @@ generate_client_functions(Paths, Options) ->
           %% io:format("XXX ~p~n", [maps:get(securitySchemes]),
 
           PathOperations = openapi_path:operations(PathItemObject),
-          lists:foldl(
+          lists:map(
             fun
-              ({Verb, OperationObject}, Acc2) ->
+              ({Verb, OperationObject}) ->
 
                 Id = openapi_operation:operation_id(OperationObject),
                 Parameters = openapi_operation:parameters(OperationObject),
@@ -171,41 +171,43 @@ generate_client_functions(Paths, Options) ->
 
                 FuncName = openapi_code:snake_case(Id),
 
-                [#{f_name => FuncName,
-                   path_parameters =>
-                     lists:map(
-                       fun (#{name := Name}) ->
-                           #{pascal_name => openapi_code:pascal_case(Name),
-                             snake_name => openapi_code:snake_case(Name)}
-                       end, PathParameters),
-                   query_parameters =>
-                     lists:map(
+                #{f_name => FuncName,
+                  path_parameters =>
+                    lists:map(
+                      fun (#{name := Name}) ->
+                          #{pascal_name => openapi_code:pascal_case(Name),
+                            snake_name => openapi_code:snake_case(Name)}
+                      end, PathParameters),
+                  query_parameters =>
+                    lists:map(
                       fun (#{name := Name} = Parameter) ->
                           #{snake_name => openapi_code:snake_case(Name),
                             real_name => Name,
                             style => maps:get(style, Parameter, form),
                             explode => maps:get(explode, Parameter, false)}
                       end, QueryParameters),
-                   header_parameters =>
-                     lists:map(
-                       fun (#{name := Name} = Parameter) ->
-                           #{snake_name => openapi_code:snake_case(Name),
-                             real_name => Name,
-                             style => maps:get(style, Parameter, simple),
-                             explode => maps:get(explode, Parameter, false)}
-                       end, HeaderParameters),
-                   method => Verb,
-                   target_host => maps:get(default_host, Options, <<>>),
-                   path_format => unicode:characters_to_binary(PathFormat),
-                   path_args =>
-                     unicode:characters_to_binary(
-                       ["[",
-                        lists:join(
-                          ",",
-                          lists:map(
-                            fun (Name) ->
-                                ["Var", openapi_code:pascal_case(Name)]
-                            end, VariablesNames)), "]"])} | Acc2]
+                  header_parameters =>
+                    lists:map(
+                      fun (#{name := Name} = Parameter) ->
+                          #{snake_name => openapi_code:snake_case(Name),
+                            real_name => Name,
+                            style => maps:get(style, Parameter, simple),
+                            explode => maps:get(explode, Parameter, false)}
+                      end, HeaderParameters),
+                  method => Verb,
+                  target_host => maps:get(default_host, Options, <<>>),
+                  path_format => unicode:characters_to_binary(PathFormat),
+                  path_args =>
+                    unicode:characters_to_binary(
+                      ["[",
+                       lists:join(
+                         ",",
+                         lists:map(
+                           fun (Name) ->
+                               ["Var", openapi_code:pascal_case(Name)]
+                           end, VariablesNames)), "]"]),
+                  responses =>
+                    []}
 
 
                 %%   "_ReqBody = [],",
@@ -238,7 +240,7 @@ generate_client_functions(Paths, Options) ->
                 %%                Acc3
                 %%     end, [], Responses),
                 %%   "_ ->\n",
-            end, Acc, PathOperations)
+            end, PathOperations) ++ Acc
       end, [], Paths).
 
 generate_jsv_file(Datetime, PackageName, Spec, Options) ->
