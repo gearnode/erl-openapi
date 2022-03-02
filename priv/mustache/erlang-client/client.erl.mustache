@@ -87,6 +87,10 @@
           case mhttp_media_type:parse(MediaTypeValue) of
             {ok, _} ->
               case mhttp_response:status(Resp) of
+                @@#responses@@
+                @@status@@ ->
+                  {ok, Resp};
+                @@/responses@@
                 _ ->
                   {ok, Resp}
               end;

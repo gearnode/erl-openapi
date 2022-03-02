@@ -72,7 +72,7 @@ write_and_format_file(OutDir, Filename0, Content) ->
   State = rebar3_formatter:new(default_formatter,
                                #{output_dir => OutDir, action => format},
                                undefined),
-  file:write_file(Filename, Content),
+  ok = file:write_file(Filename, Content),
   rebar3_formatter:format_file(Filename, State),
   ok.
 
@@ -167,7 +167,7 @@ generate_client_functions(Paths, Options) ->
                 QueryParameters = openapi_parameter:queries(Parameters),
                 PathParameters = openapi_parameter:paths(Parameters),
                 HeaderParameters = openapi_parameter:headers(Parameters),
-                %% Responses = openapi_operation:responses(OperationObject),
+                Responses = openapi_operation:responses(OperationObject),
 
                 FuncName = openapi_code:snake_case(Id),
 
@@ -207,8 +207,11 @@ generate_client_functions(Paths, Options) ->
                                ["Var", openapi_code:pascal_case(Name)]
                            end, VariablesNames)), "]"]),
                   responses =>
-                    []}
-
+                    maps:fold(
+                     fun (K, V, Acc2) ->
+                         [#{status => K} | Acc2]
+                     end, [], maps:without([<<"default">>], Responses)),
+                  default_response => #{}}
 
                 %%   "_ReqBody = [],",
                 %%   "target => #{scheme => <<\"https\">>, host => <<\"api.stripe.com\">>, path => iolist_to_binary(ReqPath), query => ReqQuery}",
