@@ -3,6 +3,8 @@
 
 -module(@@package_name@@).
 
+-export([encode_q/4, encode_h/4]).
+
 @@#exported_functions@@
 -export([@@.@@/1, @@.@@/2]).
 @@/exported_functions@@
@@ -168,3 +170,72 @@ encode_q(deepObject, true, Key, Values) when is_map(Values) ->
         K2 = atom_to_binary(K),
         [{<<Key/binary, $[, K2/binary, $]>>, atom_to_binary(V)} | Acc]
     end, [], Values).
+
+-spec encode_h(Style, Explode, Key, Value) -> mhttp:header()
+          when Style :: simple,
+               Explode :: boolean(),
+               Key :: binary(),
+               Value :: term().
+encode_h(simple, false, Key, Value) when is_binary(Value) ->
+  [{Key, Value}];
+encode_h(simple, false, Key, Value) when is_integer(Value) ->
+  [{Key, integer_to_binary(Value)}];
+encode_h(simple, false, Key, Value) when is_atom(Value) ->
+  [{Key, atom_to_binary(Value)}];
+encode_h(simple, false, Key, Values) when is_list(Values) ->
+  [{Key,
+    unicode:characters_to_binary(
+      lists:join(
+        ",",
+        lists:map(
+          fun
+            (Value) when is_binary(Value) -> Value;
+            (Value) when is_integer(Value) -> integer_to_binary(Value);
+            (Value) when is_atom(Value) -> atom_to_binary(Value)
+          end, Values)))}];
+encode_h(simple, false, Key, Values) when is_map(Values) ->
+  [{Key,
+    unicode:characters_to_binary(
+      lists:join(
+        ",",
+        maps:fold(
+          fun
+            (K, V, Acc) when is_binary(V) ->
+              [[K, $,, V] | Acc];
+            (K, V, Acc) when is_integer(V) ->
+              [[K, $,, integer_to_binary(V)] | Acc];
+            (K, V, Acc) when is_atom(V) ->
+              [[K, $,, atom_to_binary(V)] | Acc]
+          end, [], Values)))}];
+
+encode_h(simple, true, Key, Value) when is_binary(Value) ->
+  [{Key, Value}];
+encode_h(simple, true, Key, Value) when is_integer(Value) ->
+  [{Key, integer_to_binary(Value)}];
+encode_h(simple, true, Key, Value) when is_atom(Value) ->
+  [{Key, atom_to_binary(Value)}];
+encode_h(simple, true, Key, Values) when is_list(Values) ->
+  [{Key,
+    unicode:characters_to_binary(
+      lists:join(
+        ",",
+        lists:map(
+          fun
+            (Value) when is_binary(Value) -> Value;
+            (Value) when is_integer(Value) -> integer_to_binary(Value);
+            (Value) when is_atom(Value) -> atom_to_binary(Value)
+          end, Values)))}];
+encode_h(simple, true, Key, Values) when is_map(Values) ->
+  [{Key,
+    unicode:characters_to_binary(
+      lists:join(
+        ",",
+        maps:fold(
+          fun
+            (K, V, Acc) when is_binary(V) ->
+              [[K, $=, V] | Acc];
+            (K, V, Acc) when is_integer(V) ->
+              [[K, $=, integer_to_binary(V)] | Acc];
+            (K, V, Acc) when is_atom(V) ->
+              [[K, $=, atom_to_binary(V)] | Acc]
+          end, [], Values)))}].
