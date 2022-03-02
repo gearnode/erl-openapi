@@ -60,16 +60,20 @@ generate(Spec, OutDir, Options) ->
   F3 = generate_jsv_file(Datetime, PackageName, Spec, Options),
   F4 = generate_client_file(Datetime, PackageName, Spec, Options),
 
-  file:write_file(filename:join(OutDir, <<PackageName/binary, "_openapi.erl">>), F1),
-  file:write_file(filename:join(OutDir, <<PackageName/binary, "_schemas.erl">>), F2),
-  file:write_file(filename:join(OutDir, <<PackageName/binary, "_jsv.erl">>), F3),
-  file:write_file(filename:join(OutDir, <<PackageName/binary, "_client.erl">>), F4),
+  write_and_format_file(OutDir, <<PackageName/binary, "_openapi.erl">>, F1),
+  write_and_format_file(OutDir, <<PackageName/binary, "_schemas.erl">>, F2),
+  write_and_format_file(OutDir, <<PackageName/binary, "_jsv.erl">>, F3),
+  write_and_format_file(OutDir, <<PackageName/binary, "_client.erl">>, F4),
+  ok.
 
-  X = rebar3_formatter:new(default_formatter, #{output_dir => "src", action => format}, undefined),
-  rebar3_formatter:format_file(binary_to_list(filename:join(OutDir, <<PackageName/binary, "_openapi.erl">>)), X),
-  rebar3_formatter:format_file(binary_to_list(filename:join(OutDir, <<PackageName/binary, "_schemas.erl">>)), X),
-  rebar3_formatter:format_file(binary_to_list(filename:join(OutDir, <<PackageName/binary, "_jsv.erl">>)), X),
-  rebar3_formatter:format_file(binary_to_list(filename:join(OutDir, <<PackageName/binary, "_client.erl">>)), X),
+-spec write_and_format_file(binary(), binary(), iodata()) -> ok.
+write_and_format_file(OutDir, Filename0, Content) ->
+  Filename = binary_to_list(filename:join(OutDir, Filename0)),
+  State = rebar3_formatter:new(default_formatter,
+                               #{output_dir => OutDir, action => format},
+                               undefined),
+  file:write(Filename, Content),
+  rebar3_formatter:format_file(Filename, State),
   ok.
 
 generate_client_file(Datetime, PackageName, Spec, Options) ->
