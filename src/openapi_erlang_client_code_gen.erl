@@ -98,12 +98,10 @@ generate_client_function_names(Paths, _Options) ->
 generate_client_function_request_types(Paths, _Options) ->
   maps:fold(
     fun (_, PathItemObject, Acc) ->
-        maps:fold(
+        PathOperations = openapi_path:operations(PathItemObject),
+        Acc ++ lists:map(
           fun
-            (Verb, OperationObject, Acc2) when Verb =:= get; Verb =:= post;
-                                               Verb =:= put; Verb =:= delete;
-                                               Verb =:= options; Verb =:= head;
-                                               Verb =:= patch; Verb =:= trace ->
+            ({_, OperationObject}) ->
               Id = openapi_operation:operation_id(OperationObject),
               TypeName = [openapi_code:snake_case(Id), "_request"],
               Parameters = openapi_operation:parameters(OperationObject),
@@ -154,11 +152,9 @@ generate_client_function_request_types(Paths, _Options) ->
                     ["body => {binary(), term()}"]] ++ lists:map(F, PathParameters)),
                  "}."],
 
-              [#{name => unicode:characters_to_binary(TypeName),
-                 def => unicode:characters_to_binary(TypeDef)} | Acc2];
-            (_Key, _Value, Acc2) ->
-              Acc2
-          end, Acc, PathItemObject)
+              #{name => unicode:characters_to_binary(TypeName),
+                def => unicode:characters_to_binary(TypeDef)}
+          end, PathOperations)
     end, [], Paths).
 
 generate_client_functions(Paths, Options) ->
