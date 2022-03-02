@@ -79,7 +79,7 @@ generate_client_file(Datetime, PackageName, Spec, Options) ->
            exported_functions => generate_client_function_names(Paths, Options),
            package_name => <<PackageName/binary, "_client">>,
            functions => generate_client_functions(Paths, Options)},
-  openapi_mustache:render(<<"erlang-client/client.erl">>, Data).
+  openapi_mustache:render(<<"erlang-client/client.erl">>, Data, #{disable_html_escaping => true}).
 
 generate_client_function_names(Paths, _Options) ->
   maps:fold(
@@ -151,7 +151,7 @@ generate_client_function_request_types(Paths, _Options) ->
                        true ->
                          ["#{", lists:join(", ", lists:map(F, CookieParameters)), $}]
                      end],
-                    ["body => term()"]] ++ lists:map(F, PathParameters)),
+                    ["body => {binary(), term()}"]] ++ lists:map(F, PathParameters)),
                  "}."],
 
               [#{name => unicode:characters_to_binary(TypeName),
@@ -162,7 +162,7 @@ generate_client_function_request_types(Paths, _Options) ->
     end, [], Paths).
 
 generate_client_functions(Paths, _Options) ->
-  unicode:characters_to_binary(
+  %% unicode:characters_to_binary(
     maps:fold(
       fun (Path, PathItemObject, Acc) ->
           {PathFormat, VariablesNames} = openapi_path_template:parse(Path),
@@ -181,148 +181,80 @@ generate_client_functions(Paths, _Options) ->
                 QueryParameters = openapi_parameter:queries(Parameters),
                 PathParameters = openapi_parameter:paths(Parameters),
                 HeaderParameters = openapi_parameter:headers(Parameters),
-                Responses = openapi_operation:responses(OperationObject),
+                %% Responses = openapi_operation:responses(OperationObject),
 
                 FuncName = openapi_code:snake_case(Id),
-                ArgType = [FuncName, "_request()"],
-                ReturnType = "term()",
 
-                ToSnakeCase =
-                  fun (#{name := Name}) -> openapi_code:snake_case(Name) end,
+                [#{f_name => FuncName,
+                   path_parameters =>
+                     lists:map(
+                       fun (#{name := Name}) ->
+                           #{pascal_name => openapi_code:pascal_case(Name),
+                             snake_name => openapi_code:snake_case(Name)}
+                       end, PathParameters),
+                   query_parameters =>
+                     lists:map(
+                      fun (#{name := Name} = Parameter) ->
+                          #{snake_name => openapi_code:snake_case(Name),
+                            real_name => Name,
+                            style => maps:get(style, Parameter, form),
+                            explode => maps:get(explode, Parameter, false)}
+                      end, QueryParameters),
+                   header_parameters =>
+                     lists:map(
+                       fun (#{name := Name} = Parameter) ->
+                           #{snake_name => openapi_code:snake_case(Name),
+                             real_name => Name,
+                             style => maps:get(style, Parameter, form),
+                             explode => maps:get(explode, Parameter, false)}
+                       end, HeaderParameters),
+                   method => Verb,
+                   path_format => unicode:characters_to_binary(PathFormat),
+                   path_args =>
+                     unicode:characters_to_binary(
+                       ["[",
+                        lists:join(
+                          ",",
+                          lists:map(
+                            fun (Name) ->
+                                ["Var", openapi_code:pascal_case(Name)]
+                            end, VariablesNames)), "]"])} | Acc2];
 
-                ToPascalCase =
-                  fun (Name) -> ["Var", openapi_code:pascal_case(Name)] end,
 
-                ReqHeaderKeys =
-                  lists:join(", ", lists:map(ToSnakeCase, HeaderParameters)),
-                ReqQueryKeys =
-                  lists:join(", ", lists:map(ToSnakeCase, QueryParameters)),
+                %%   "_ReqBody = [],",
+                %%   "target => #{scheme => <<\"https\">>, host => <<\"api.stripe.com\">>, path => iolist_to_binary(ReqPath), query => ReqQuery}",
+                %%   "},",
+                %%
 
-                PathArguments =
-                  lists:join(", ", lists:map(ToPascalCase, VariablesNames)),
-
-                [["-spec ", FuncName, $(, ArgType, ") -> ", ReturnType, ".\n",
-                  FuncName,  "(Args) ->", $\n,
-                  FuncName, "(Args, #{}).\n"],
-                 $\n,
-                 ["-spec ", FuncName, $(, ArgType, ", mhttp:request_options()) -> ", ReturnType, ".\n",
-                  if
-                    length(Parameters) =:= 0 ->
-                      [FuncName,  "(_Args, Options) ->", $\n];
-                    true ->
-                      [FuncName,  "(Args, Options) ->", $\n]
-                  end,
-                  lists:map(
-                    fun (Parameter) ->
-                        Name = maps:get(name, Parameter),
-                        VarName = ["Var", openapi_code:pascal_case(Name)],
-                        KeyName = openapi_code:snake_case(Name),
-
-                        [VarName, " = maps:get(", KeyName, ", Args),"]
-                    end, PathParameters),
-
-                  if
-                    length(QueryParameters) =:= 0 ->
-                      "ReqQuery = [],";
-                    true ->
-                      ["EncodeQuery = fun\n",
-                       lists:join(
-                         ";\n",
-                         lists:map(fun (ParameterObject) ->
-                                       Name = openapi_parameter:name(ParameterObject),
-                                       Style = maps:get(style, ParameterObject, form),
-                                       Explode = maps:get(explode, ParameterObject, false),
-                                       KeyName = openapi_code:snake_case(Name),
-                                       Encode = io_lib:format("encode_q(~s, ~s, <<\"~s\">>, ~s)",
-                                                              [Style, Explode, KeyName, "Value"]),
-
-                                       ["({", KeyName, ", Value}) ->\n",
-                                        Encode, "\n"]
-                                   end, QueryParameters)),
-                       "\nend,",
-                       "ReqQuery = lists:flatmap(EncodeQuery,\n",
-                       "maps:to_list(maps:with([", ReqQueryKeys, "], maps:get(query, Args, #{})))),"]
-                  end,
-                  if
-                    length(HeaderParameters) =:= 0 ->
-                      "ReqHeader = [],";
-                    true ->
-                      ["EncodeHeader = fun\n",
-                       lists:join(
-                         ";\n",
-                         lists:map(
-                           fun (ParameterObject) ->
-                               Name = openapi_parameter:name(ParameterObject),
-                               %% Style = maps:get(style, ParameterObject, form),
-                               %% Explode = maps:get(explode, ParameterObject, false),
-                               %% Schema = maps:get(schema, ParameterObject),
-                               %% SchemaType = maps:get(type, Schema),
-                               KeyName = openapi_code:snake_case(Name),
-
-                               ["({", KeyName, ", Value}) ->\n",
-                                "{<<\"", KeyName, "\">>, <<>>}\n"]
-                           end, HeaderParameters)),
-                      "\nend,",
-                      "ReqHeader = lists:map(EncodeHeader,\n",
-                       "maps:to_list(maps:with([", ReqHeaderKeys, "], Args))),"]
-                  end,
-                  "ReqMethod = ", atom_to_binary(Verb), ",",
-                  "_ReqBody = [],",
-                  "ReqPath = io_lib:format(\"", PathFormat, "\", [", PathArguments, "]),",
-                  "Req = #{",
-                  "method => ReqMethod,",
-                  "header => ReqHeader,",
-                  "target => #{path => iolist_to_binary(ReqPath), query => ReqQuery}",
-                  "},",
-
-                  "case mhttp:send_request(Req, Options) of\n",
-                  "{ok, Response} ->\n"
-                  "Header = mhttp_response:header(Response),\n",
-                  "case mhttp_header:find(Header, <<\"Content-Type\">>) of\n",
-                  "{ok, HeaderValue} ->\n",
-                  "case mhttp_media_type:parse(HeaderValue) of\n",
-                  "{ok, _MediaType} -> \n",
-                  "case mhttp_response:status(Response) of\n",
-                  maps:fold(
-                    fun
-                      (StatusCode, _ResponseObject, Acc3) when
-                          StatusCode =/= <<"default">> ->
-                        [[StatusCode, " ->\n",
-                          "{ok, Response};"] | Acc3];
-                          %% case maps:find(content, ResponseObject) of
-                          %%   {ok, Contents} ->
-                          %%     ["if\n",
-                          %%      maps:fold(
-                          %%        fun (_, _, Acc4) ->
-                          %%            [["mhttp_media_range:match() =:= true ->\n",
-                          %%              "hello;\n"] | Acc4]
-                          %%        end, [], Contents),
-                          %%      "true ->\n",
-                          %%      "{ok, Response}\n",
-                          %%      "end;"];
-                          %%   error ->
-                          %%     "{ok, Response};"
-                          %% end] | Acc3];
-                      (_, _, Acc3) ->
-                               Acc3
-                    end, [], Responses),
-                  "_ ->\n",
-                  "handle_default_here\n",
-                  "end;",
-                  "{error, Reason} ->\n",
-                  "{error, {invalid_content_type, Reason}}\n",
-                  "end;\n",
-                  "error ->\n",
-                  "{error, missing_content_type}\n",
-                  "end;\n",
-                  "{error, Reason} ->\n",
-                  "{error, {mhttp, Reason}}\n",
-                  "end.\n\n"] | Acc2];
-                  %% "ok.\n\n"] | Acc2];
+                %%   "case mhttp_response:status(Response) of\n",
+                %%   maps:fold(
+                %%     fun
+                %%       (StatusCode, _ResponseObject, Acc3) when
+                %%           StatusCode =/= <<"default">> ->
+                %%         [[StatusCode, " ->\n",
+                %%           "{ok, Response};"] | Acc3];
+                %%           %% case maps:find(content, ResponseObject) of
+                %%           %%   {ok, Contents} ->
+                %%           %%     ["if\n",
+                %%           %%      maps:fold(
+                %%           %%        fun (_, _, Acc4) ->
+                %%           %%            [["mhttp_media_range:match() =:= true ->\n",
+                %%           %%              "hello;\n"] | Acc4]
+                %%           %%        end, [], Contents),
+                %%           %%      "true ->\n",
+                %%           %%      "{ok, Response}\n",
+                %%           %%      "end;"];
+                %%           %%   error ->
+                %%           %%     "{ok, Response};"
+                %%           %% end] | Acc3];
+                %%       (_, _, Acc3) ->
+                %%                Acc3
+                %%     end, [], Responses),
+                %%   "_ ->\n",
               (_, Acc2) ->
                 Acc2
             end, Acc, PathOperations)
-      end, [], Paths)).
+      end, [], Paths).
 
 generate_jsv_file(Datetime, PackageName, Spec, Options) ->
   Schemas = maps:get(schemas, openapi:components(Spec), #{}),
