@@ -9,7 +9,7 @@
 -export([@@.@@/1, @@.@@/2]).
 @@/exported_functions@@
 
--export_type([options/0]).
+-export_type([options/0, error/0, error_reason/0]).
 @@#types@@
 -export_type([@@name@@/0]).
 @@/types@@
@@ -20,25 +20,28 @@
           scheme => uri:scheme(),
           port => uri:port_number()}.
 
+
+-type error() ::
+        {error, error_reason()}
+      | {error, error_reason(), mhttp:response()}.
+
+-type error_reason() ::
+        {mhttp, mhttp:error_reason()}
+      | missing_content_type
+      | {invalid_content_type, mhttp_media_type:error_reason()}.
+
 @@#types@@
 @@def@@
 @@/types@@
 
 
 @@#functions@@
--spec @@f_name@@(@@f_name@@_request()) ->
-        {ok, mhttp:response()} |
-        {error, {mhttp, mhttp:error_reason()}} |
-        {error, missing_content_type, mhttp:response()} |
-        {error, {invalid_content_type, mhttp_media_type:error_reason()}, mhttp:response()}.
+-spec @@f_name@@(@@f_name@@_request()) -> {ok, mhttp:response()} | error().
 @@f_name@@(Args) ->
   @@f_name@@(Args, #{}).
 
 -spec @@f_name@@(@@f_name@@_request(), options()) ->
-        {ok, mhttp:response()} |
-        {error, {mhttp, mhttp:error_reason()}} |
-        {error, missing_content_type, mhttp:response()} |
-        {error, {invalid_content_type, mhttp_media_type:error_reason()}, mhttp:response()}.
+        {ok, mhttp:response()} | error().
 @@f_name@@(Args, Options) ->
   @@#path_parameters@@
   Var@@pascal_name@@ = maps:get(@@snake_name@@, Args),
