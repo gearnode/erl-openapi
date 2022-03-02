@@ -219,7 +219,7 @@ generate_client_functions(Paths, Options) ->
                           lists:map(
                             fun (Name) ->
                                 ["Var", openapi_code:pascal_case(Name)]
-                            end, VariablesNames)), "]"])} | Acc2];
+                            end, VariablesNames)), "]"])} | Acc2]
 
 
                 %%   "_ReqBody = [],",
@@ -252,8 +252,6 @@ generate_client_functions(Paths, Options) ->
                 %%                Acc3
                 %%     end, [], Responses),
                 %%   "_ ->\n",
-              (_, Acc2) ->
-                Acc2
             end, Acc, PathOperations)
       end, [], Paths).
 
