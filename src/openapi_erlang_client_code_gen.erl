@@ -223,37 +223,6 @@ generate_client_functions(Paths, Options) ->
                          [#{status => StatusCode, media_types => Value} | Acc2]
                      end, [], maps:without([<<"default">>], Responses)),
                   default_response => #{}}
-
-                %%   "_ReqBody = [],",
-                %%   "target => #{scheme => <<\"https\">>, host => <<\"api.stripe.com\">>, path => iolist_to_binary(ReqPath), query => ReqQuery}",
-                %%   "},",
-                %%
-
-                %%   "case mhttp_response:status(Response) of\n",
-                %%   maps:fold(
-                %%     fun
-                %%       (StatusCode, _ResponseObject, Acc3) when
-                %%           StatusCode =/= <<"default">> ->
-                %%         [[StatusCode, " ->\n",
-                %%           "{ok, Response};"] | Acc3];
-                %%           %% case maps:find(content, ResponseObject) of
-                %%           %%   {ok, Contents} ->
-                %%           %%     ["if\n",
-                %%           %%      maps:fold(
-                %%           %%        fun (_, _, Acc4) ->
-                %%           %%            [["mhttp_media_range:match() =:= true ->\n",
-                %%           %%              "hello;\n"] | Acc4]
-                %%           %%        end, [], Contents),
-                %%           %%      "true ->\n",
-                %%           %%      "{ok, Response}\n",
-                %%           %%      "end;"];
-                %%           %%   error ->
-                %%           %%     "{ok, Response};"
-                %%           %% end] | Acc3];
-                %%       (_, _, Acc3) ->
-                %%                Acc3
-                %%     end, [], Responses),
-                %%   "_ ->\n",
             end, PathOperations) ++ Acc
       end, [], Paths).
 
