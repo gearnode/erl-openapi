@@ -148,83 +148,82 @@ generate_client_function_request_types(Paths, _Options) ->
     end, [], Paths).
 
 generate_client_functions(Paths, Options) ->
-  %% unicode:characters_to_binary(
-    maps:fold(
-      fun (Path, PathItemObject, Acc) ->
-          {PathFormat, VariablesNames} = openapi_path_template:parse(Path),
-          %% TODO manage global parametgers not needed for stripe
-          %% io:format("XXX ~p~n", [maps:get(parameters, PathItemObject, [])]),
-          %% io:format("XXX ~p~n", [maps:get(securitySchemes]),
+  maps:fold(
+    fun (Path, PathItemObject, Acc) ->
+        {PathFormat, VariablesNames} = openapi_path_template:parse(Path),
+        %% TODO manage global parametgers not needed for stripe
+        %% io:format("XXX ~p~n", [maps:get(parameters, PathItemObject, [])]),
+        %% io:format("XXX ~p~n", [maps:get(securitySchemes]),
 
-          PathOperations = openapi_path:operations(PathItemObject),
-          lists:map(
-            fun
-              ({Verb, OperationObject}) ->
+        PathOperations = openapi_path:operations(PathItemObject),
+        lists:map(
+          fun
+            ({Verb, OperationObject}) ->
 
-                Id = openapi_operation:operation_id(OperationObject),
-                Parameters = openapi_operation:parameters(OperationObject),
+              Id = openapi_operation:operation_id(OperationObject),
+              Parameters = openapi_operation:parameters(OperationObject),
 
-                QueryParameters = openapi_parameter:queries(Parameters),
-                PathParameters = openapi_parameter:paths(Parameters),
-                HeaderParameters = openapi_parameter:headers(Parameters),
-                Responses = openapi_operation:responses(OperationObject),
+              QueryParameters = openapi_parameter:queries(Parameters),
+              PathParameters = openapi_parameter:paths(Parameters),
+              HeaderParameters = openapi_parameter:headers(Parameters),
+              Responses = openapi_operation:responses(OperationObject),
 
-                FuncName = openapi_code:snake_case(Id),
+              FuncName = openapi_code:snake_case(Id),
 
-                #{f_name => FuncName,
-                  path_parameters =>
-                    lists:map(
-                      fun (#{name := Name}) ->
-                          #{pascal_name => openapi_code:pascal_case(Name),
-                            snake_name => openapi_code:snake_case(Name)}
-                      end, PathParameters),
-                  query_parameters =>
-                    lists:map(
-                      fun (#{name := Name} = Parameter) ->
-                          #{snake_name => openapi_code:snake_case(Name),
-                            real_name => Name,
-                            style => maps:get(style, Parameter, form),
-                            explode => maps:get(explode, Parameter, false)}
-                      end, QueryParameters),
-                  header_parameters =>
-                    lists:map(
-                      fun (#{name := Name} = Parameter) ->
-                          #{snake_name => openapi_code:snake_case(Name),
-                            real_name => Name,
-                            style => maps:get(style, Parameter, simple),
-                            explode => maps:get(explode, Parameter, false)}
-                      end, HeaderParameters),
-                  method => Verb,
-                  target_host => maps:get(default_host, Options, <<>>),
-                  path_format => unicode:characters_to_binary(PathFormat),
-                  path_args =>
-                    unicode:characters_to_binary(
-                      ["[",
-                       lists:join(
-                         ",",
-                         lists:map(
-                           fun (Name) ->
-                               ["Var", openapi_code:pascal_case(Name)]
-                           end, VariablesNames)), "]"]),
-                  responses =>
-                    maps:fold(
-                     fun (StatusCode, ResponseObject, Acc2) ->
-                         Content = maps:get(content, ResponseObject, #{}),
+              #{f_name => FuncName,
+                path_parameters =>
+                  lists:map(
+                    fun (#{name := Name}) ->
+                        #{pascal_name => openapi_code:pascal_case(Name),
+                          snake_name => openapi_code:snake_case(Name)}
+                    end, PathParameters),
+                query_parameters =>
+                  lists:map(
+                    fun (#{name := Name} = Parameter) ->
+                        #{snake_name => openapi_code:snake_case(Name),
+                          real_name => Name,
+                          style => maps:get(style, Parameter, form),
+                          explode => maps:get(explode, Parameter, false)}
+                    end, QueryParameters),
+                header_parameters =>
+                  lists:map(
+                    fun (#{name := Name} = Parameter) ->
+                        #{snake_name => openapi_code:snake_case(Name),
+                          real_name => Name,
+                          style => maps:get(style, Parameter, simple),
+                          explode => maps:get(explode, Parameter, false)}
+                    end, HeaderParameters),
+                method => Verb,
+                target_host => maps:get(default_host, Options, <<>>),
+                path_format => unicode:characters_to_binary(PathFormat),
+                path_args =>
+                  unicode:characters_to_binary(
+                    ["[",
+                     lists:join(
+                       ",",
+                       lists:map(
+                         fun (Name) ->
+                             ["Var", openapi_code:pascal_case(Name)]
+                         end, VariablesNames)), "]"]),
+                responses =>
+                  maps:fold(
+                    fun (StatusCode, ResponseObject, Acc2) ->
+                        Content = maps:get(content, ResponseObject, #{}),
 
-                         Value =
-                           maps:fold(
-                             fun (MediaType, MediaTypeObject, Acc3) ->
-                                 Schema = maps:get(schema, MediaTypeObject, #{}),
-                                 {ok, MT} = mhttp_media_type:parse(MediaType),
-                                 [#{media_type => MT,
-                                    jsv_schema => unicode:characters_to_binary(schema_to_jsv(Schema, #{namespace => <<"stripe">>}))} | Acc3]
-                             end, [], Content),
+                        Value =
+                          maps:fold(
+                            fun (MediaType, MediaTypeObject, Acc3) ->
+                                Schema = maps:get(schema, MediaTypeObject, #{}),
+                                {ok, MT} = mhttp_media_type:parse(MediaType),
+                                [#{media_type => MT,
+                                   jsv_schema => unicode:characters_to_binary(schema_to_jsv(Schema, #{namespace => <<"stripe">>}))} | Acc3]
+                            end, [], Content),
 
-                         [#{status => StatusCode, media_types => Value} | Acc2]
-                     end, [], maps:without([<<"default">>], Responses)),
-                  default_response => #{}}
-            end, PathOperations) ++ Acc
-      end, [], Paths).
+                        [#{status => StatusCode, media_types => Value} | Acc2]
+                    end, [], maps:without([<<"default">>], Responses)),
+                default_response => #{}}
+          end, PathOperations) ++ Acc
+    end, [], Paths).
 
 generate_jsv_file(Datetime, PackageName, Spec, Options) ->
   Schemas = maps:get(schemas, openapi:components(Spec), #{}),
