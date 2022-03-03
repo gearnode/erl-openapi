@@ -74,9 +74,9 @@
   ReqOptions = maps:get(http, Options, #{}),
   Req = #{method => @@method@@,
           header => ReqHeader,
-          target => #{scheme => maps:get(host, Options, <<"https">>),
+          target => #{scheme => maps:get(scheme, Options, <<"https">>),
                       port => maps:get(port, Options, 443),
-                      host => maps:get(scheme, Options, <<"@@target_host@@">>),
+                      host => maps:get(host, Options, <<"@@target_host@@">>),
                       path => iolist_to_binary(ReqPath),
                       query => ReqQuery}},
   case mhttp:send_request(Req, ReqOptions) of
