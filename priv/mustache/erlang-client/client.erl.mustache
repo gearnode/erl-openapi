@@ -28,7 +28,9 @@
 -type error_reason() ::
         {mhttp, mhttp:error_reason()}
       | missing_content_type
-      | {invalid_content_type, mhttp_media_type:error_reason()}.
+      | {invalid_content_type, mhttp_media_type:error_reason()}
+      | {invalid_json, json:error_reason()}
+      | {invalid_payload, jsv:validation_error() | [jsv:validation_error()]}.
 
 @@#types@@
 @@def@@
@@ -81,15 +83,33 @@
                       query => ReqQuery}},
   case mhttp:send_request(Req, ReqOptions) of
     {ok, Resp} ->
+      RespBody = mhttp_response:body(Resp),
       RespHeader = mhttp_response:header(Resp),
       case mhttp_header:find(RespHeader, <<"Content-Type">>) of
         {ok, MediaTypeValue} ->
           case mhttp_media_type:parse(MediaTypeValue) of
-            {ok, _} ->
+            {ok, MediaType} ->
               case mhttp_response:status(Resp) of
                 @@#responses@@
                 @@status@@ ->
-                  {ok, Resp};
+                  case MediaType of
+                  @@#media_types@@
+                    @@media_type@@ ->
+                      case json:parse(RespBody) of
+                        {ok, Data} ->
+                          case jsv:validate(Data, @@jsv_schema@@) of
+                            {ok, _} ->
+                              {ok, Resp};
+                            {error, Reason} ->
+                              {error, {invalid_payload, Reason}, Resp}
+                          end;
+                        {error, Reason} ->
+                          {error, {invalid_json, Reason}, Resp}
+                      end;
+                  @@/media_types@@
+                    _ ->
+                      {ok, Resp}
+                  end;
                 @@/responses@@
                 _ ->
                   {ok, Resp}

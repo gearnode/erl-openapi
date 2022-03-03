@@ -208,8 +208,19 @@ generate_client_functions(Paths, Options) ->
                            end, VariablesNames)), "]"]),
                   responses =>
                     maps:fold(
-                     fun (K, V, Acc2) ->
-                         [#{status => K} | Acc2]
+                     fun (StatusCode, ResponseObject, Acc2) ->
+                         Content = maps:get(content, ResponseObject, #{}),
+
+                         Value =
+                           maps:fold(
+                             fun (MediaType, MediaTypeObject, Acc3) ->
+                                 Schema = maps:get(schema, MediaTypeObject, #{}),
+                                 {ok, MT} = mhttp_media_type:parse(MediaType),
+                                 [#{media_type => MT,
+                                    jsv_schema => unicode:characters_to_binary(schema_to_jsv(Schema, Options))} | Acc3]
+                             end, [], Content),
+
+                         [#{status => StatusCode, media_types => Value} | Acc2]
                      end, [], maps:without([<<"default">>], Responses)),
                   default_response => #{}}
 
