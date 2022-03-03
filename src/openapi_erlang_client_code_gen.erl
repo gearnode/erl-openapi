@@ -217,7 +217,7 @@ generate_client_functions(Paths, Options) ->
                                  Schema = maps:get(schema, MediaTypeObject, #{}),
                                  {ok, MT} = mhttp_media_type:parse(MediaType),
                                  [#{media_type => MT,
-                                    jsv_schema => unicode:characters_to_binary(schema_to_jsv(Schema, Options))} | Acc3]
+                                    jsv_schema => unicode:characters_to_binary(schema_to_jsv(Schema, #{namespace => <<"stripe">>}))} | Acc3]
                              end, [], Content),
 
                          [#{status => StatusCode, media_types => Value} | Acc2]
@@ -287,8 +287,13 @@ schema_to_jsv(#{type := string, nullable := true}, _) ->
   "{one_of, [string, null]}";
 schema_to_jsv(#{type := string}, _) ->
   "string";
-schema_to_jsv(#{'$ref' := Ref}, _) ->
-  ["{ref, ", openapi_code:snake_case(lists:last(Ref)), "}"];
+schema_to_jsv(#{'$ref' := Ref}, Options) ->
+  case maps:find(namespace, Options) of
+    {ok, Namespace} ->
+      ["{ref, ", Namespace, ", ", openapi_code:snake_case(lists:last(Ref)), "}"];
+    error ->
+      ["{ref, ", openapi_code:snake_case(lists:last(Ref)), "}"]
+  end;
 schema_to_jsv(#{type := array} = Schema, Options) ->
   case maps:find(items, Schema) of
     {ok, ItemSchemas} ->
