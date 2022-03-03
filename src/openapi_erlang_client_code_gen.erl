@@ -301,6 +301,10 @@ schema_to_jsv(#{type := array} = Schema, Options) ->
     error ->
       "array"
   end;
+schema_to_jsv(#{anyOf := Schemas, nullable := true}, Options) ->
+  A = lists:map(fun (X) -> schema_to_jsv(X, Options) end, Schemas),
+  B = lists:join(",", A),
+  ["{one_of, [", B, ", null]}"];
 schema_to_jsv(#{anyOf := Schemas}, Options) ->
   A = lists:map(fun (X) -> schema_to_jsv(X, Options) end, Schemas),
   B = lists:join(",", A),
