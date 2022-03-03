@@ -24,6 +24,7 @@
     uri,
     json,
     rebar3_format,
+    mhttp,
     mustache,
     jsv]},
   {env, []},
