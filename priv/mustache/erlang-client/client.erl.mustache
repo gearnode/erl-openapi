@@ -97,9 +97,13 @@
                     @@media_type@@ ->
                       case json:parse(RespBody) of
                         {ok, Data} ->
-                          case jsv:validate(Data, @@jsv_schema@@) of
-                            {ok, _} ->
-                              {ok, Resp};
+                          ValidateOpts =
+                            #{disable_verification => true,
+                              unknown_member_handling => keep,
+                              null_member_handling => remove},
+                          case jsv:validate(Data, @@jsv_schema@@, ValidateOpts) of
+                            {ok, Schema} ->
+                              {ok, Schema, Resp};
                             {error, Reason} ->
                               {error, {invalid_payload, Reason}, Resp}
                           end;
