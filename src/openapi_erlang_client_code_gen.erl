@@ -79,13 +79,13 @@ write_and_format_file(OutDir, Filename0, Content) ->
 generate_client_file(Datetime, PackageName, Spec, Options) ->
   Paths = openapi:paths(Spec),
   Data = #{datetime => Datetime,
-           types => generate_client_function_request_types(Paths, Options),
+           types => generate_client_function_request_types(Paths, PackageName, Options),
            package_name => <<PackageName/binary, "_client">>,
-           functions => generate_client_functions(Paths, Options)},
+           functions => generate_client_functions(Paths, PackageName, Options)},
   openapi_mustache:render(<<"erlang-client/client.erl">>, Data, #{disable_html_escaping => true}).
 
 
-generate_client_function_request_types(Paths, _Options) ->
+generate_client_function_request_types(Paths, PackageName, _Options) ->
   maps:fold(
     fun (_, PathItemObject, Acc) ->
         PathOperations = openapi_path:operations(PathItemObject),
@@ -93,29 +93,51 @@ generate_client_function_request_types(Paths, _Options) ->
           fun
             ({_, OperationObject}) ->
               Id = openapi_operation:operation_id(OperationObject),
-              TypeName = [openapi_code:snake_case(Id), "_request"],
               Parameters = openapi_operation:parameters(OperationObject),
 
               QueryParameters = openapi_parameter:queries(Parameters),
               PathParameters = openapi_parameter:paths(Parameters),
               HeaderParameters = openapi_parameter:headers(Parameters),
               CookieParameters = openapi_parameter:cookies(Parameters),
+              Responses = openapi_operation:responses(OperationObject),
+              Contents = maps:fold(fun (_, V, X) ->
+                                       case maps:find(content, V) of
+                                         {ok, Contents} ->
+                                           maps:fold(
+                                             fun (_, V2, X2) ->
+                                                 case maps:find(schema, V2) of
+                                                   error ->
+                                                     X2;
+                                                   {ok, V3} ->
+                                                     [V3 | X2]
+                                                 end
+                                             end, X, Contents);
+                                         error ->
+                                           X
+                                       end
+                                   end, [], Responses),
+
+              ResponseType =
+                lists:join(
+                  " | ",
+                  lists:map(
+                    fun (V) ->
+                        schema_to_typespec(V, #{namespace => <<PackageName/binary, "_schemas">>})
+                    end, Contents)),
 
               F = fun (X) ->
                       Op = case openapi_parameter:required(X) of
-                             true ->
-                               " := ";
-                             false ->
-                               " => "
+                             true -> " := ";
+                             false -> " => "
                            end,
                       Name = openapi_parameter:name(X),
                       KeyName = openapi_code:snake_case(Name),
                       Schema = maps:get(schema, X),
-                      [KeyName, Op, schema_to_typespec(Schema)]
+                      [KeyName, Op, schema_to_typespec(Schema, #{})]
                   end,
 
-              TypeDef =
-                ["-type ", TypeName, "() :: #{",
+              RequestType =
+                ["#{",
                  lists:join(
                    ", ",
                    [["query => ",
@@ -140,14 +162,15 @@ generate_client_function_request_types(Paths, _Options) ->
                          ["#{", lists:join(", ", lists:map(F, CookieParameters)), $}]
                      end],
                     ["body => {binary(), term()}"]] ++ lists:map(F, PathParameters)),
-                 "}."],
+                 "}"],
 
-              #{name => unicode:characters_to_binary(TypeName),
-                def => unicode:characters_to_binary(TypeDef)}
+              #{name => unicode:characters_to_binary(openapi_code:snake_case(Id)),
+                request => unicode:characters_to_binary(RequestType),
+                response => unicode:characters_to_binary(ResponseType)}
           end, PathOperations)
     end, [], Paths).
 
-generate_client_functions(Paths, Options) ->
+generate_client_functions(Paths, PackageName, Options) ->
   maps:fold(
     fun (Path, PathItemObject, Acc) ->
         {PathFormat, VariablesNames} = openapi_path_template:parse(Path),
@@ -216,7 +239,7 @@ generate_client_functions(Paths, Options) ->
                                 Schema = maps:get(schema, MediaTypeObject, #{}),
                                 {ok, MT} = mhttp_media_type:parse(MediaType),
                                 [#{media_type => MT,
-                                   jsv_schema => unicode:characters_to_binary(schema_to_jsv(Schema, #{namespace => <<"stripe">>}))} | Acc3]
+                                   jsv_schema => unicode:characters_to_binary(schema_to_jsv(Schema, #{namespace => PackageName}))} | Acc3]
                             end, [], Content),
 
                         [#{status => StatusCode, media_types => Value} | Acc2]
@@ -373,7 +396,7 @@ generate_types(none, _, Acc) ->
 generate_types({Name, Schema, I}, Options, Acc) ->
   Type = #{comment => type_comment(Name, Schema, Options),
            name => openapi_code:snake_case(Name),
-           value => unicode:characters_to_binary(schema_to_typespec(Schema))},
+           value => unicode:characters_to_binary(schema_to_typespec(Schema, #{}))},
   generate_types(maps:next(I), Options, [Type | Acc]).
 
 -spec type_comment(binary(), openapi:schema(), openapi:generate_options()) -> binary().
@@ -389,8 +412,8 @@ type_comment(Name, Schema, Options) ->
     openapi_code:comment("%%", Text, 0, Options)).
 
 
--spec schema_to_typespec(openapi:schema()) -> iodata().
-schema_to_typespec(#{type := object, properties := Props} = Schema) ->
+-spec schema_to_typespec(openapi:schema(), map()) -> iodata().
+schema_to_typespec(#{type := object, properties := Props} = Schema, Options) ->
   Required = maps:get(required, Schema, []),
   F = fun (Name, Schema2, Acc) ->
           Operator =
@@ -398,53 +421,58 @@ schema_to_typespec(#{type := object, properties := Props} = Schema) ->
               true -> " := ";
               false -> " => "
             end,
-          [[$', Name, $', Operator, schema_to_typespec(Schema2)] | Acc]
+          [[$', Name, $', Operator, schema_to_typespec(Schema2, Options)] | Acc]
       end,
   Definition = maps:fold(F, [], Props),
   [$#, ${, lists:join(", ", Definition), $}];
-schema_to_typespec(#{type := object, nullable := true}) ->
+schema_to_typespec(#{type := object, nullable := true}, _) ->
   "json:value() | null";
-schema_to_typespec(#{type := object}) ->
+schema_to_typespec(#{type := object}, _) ->
   "json:value()";
-schema_to_typespec(#{type := integer, nullable := true}) ->
+schema_to_typespec(#{type := integer, nullable := true}, _) ->
   "integer() | null";
-schema_to_typespec(#{type := integer}) ->
+schema_to_typespec(#{type := integer}, _) ->
   "integer()";
-schema_to_typespec(#{type := number, nullable := true}) ->
+schema_to_typespec(#{type := number, nullable := true}, _) ->
   "number() | null";
-schema_to_typespec(#{type := number}) ->
+schema_to_typespec(#{type := number}, _) ->
   "number()";
-schema_to_typespec(#{type := boolean, nullable := true}) ->
+schema_to_typespec(#{type := boolean, nullable := true}, _) ->
   "boolean() | null";
-schema_to_typespec(#{type := boolean}) ->
+schema_to_typespec(#{type := boolean}, _) ->
   "boolean()";
-schema_to_typespec(#{type := array, nullable := true} = Schema) ->
+schema_to_typespec(#{type := array, nullable := true} = Schema, Options) ->
   case maps:find(items, Schema) of
     {ok, ItemSchema} ->
-      [$[, schema_to_typespec(ItemSchema), $], " | null"];
+      [$[, schema_to_typespec(ItemSchema, Options), $], " | null"];
     error ->
       "list() | null"
   end;
-schema_to_typespec(#{type := array} = Schema) ->
+schema_to_typespec(#{type := array} = Schema, Options) ->
   case maps:find(items, Schema) of
     {ok, ItemSchema} ->
-      [$[, schema_to_typespec(ItemSchema), $]];
+      [$[, schema_to_typespec(ItemSchema, Options), $]];
     error ->
       "list()"
   end;
-schema_to_typespec(#{type := string, enum := Enum, nullable := true}) ->
+schema_to_typespec(#{type := string, enum := Enum, nullable := true}, _) ->
   lists:join(" | ", lists:map(fun (X) -> [$', X, $'] end, Enum ++ ["null"]));
-schema_to_typespec(#{type := string, enum := Enum}) ->
+schema_to_typespec(#{type := string, enum := Enum}, _) ->
   lists:join(" | ", lists:map(fun (X) -> [$', X, $'] end, Enum));
-schema_to_typespec(#{type := string, nullable := true}) ->
+schema_to_typespec(#{type := string, nullable := true}, _) ->
   "binary() | null";
-schema_to_typespec(#{type := string}) ->
+schema_to_typespec(#{type := string}, _) ->
   "binary()";
-schema_to_typespec(#{anyOf := Schemas}) ->
-  lists:join(" | ", lists:map(fun schema_to_typespec/1, Schemas));
-schema_to_typespec(#{'$ref' := Ref}) ->
-  [openapi_code:snake_case(lists:last(Ref)), "()"];
-schema_to_typespec(_) ->
+schema_to_typespec(#{anyOf := Schemas}, Options) ->
+  lists:join(" | ", lists:map(fun (X) -> schema_to_typespec(X, Options) end, Schemas));
+schema_to_typespec(#{'$ref' := Ref}, Options) ->
+  case maps:find(namespace, Options) of
+    {ok, Namespace} ->
+      [Namespace, ":", openapi_code:snake_case(lists:last(Ref)), "()"];
+    error ->
+      [openapi_code:snake_case(lists:last(Ref)), "()"]
+  end;
+schema_to_typespec(_, _) ->
   "json:value()".
 
 generate_openapi_file(Datetime, PackageName, Spec, _Options) ->
