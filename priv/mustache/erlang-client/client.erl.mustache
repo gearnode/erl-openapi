@@ -39,17 +39,17 @@
       | {invalid_payload, jsv:validation_error() | [jsv:validation_error()]}.
 
 @@#functions@@
--type @@name@@_request() :: @@request_type@@.
+-type @@name@@_request() :: @@types.request@@.
 
--type @@name@@_request_query() :: @@request_type_query@@.
+-type @@name@@_request_query() :: @@types.query@@.
 
--type @@name@@_request_header() :: @@request_type_header@@.
+-type @@name@@_request_header() :: @@types.header@@.
 
--type @@name@@_request_cookie() :: @@request_type_cookie@@.
+-type @@name@@_request_cookie() :: @@types.cookie@@.
 
--type @@name@@_request_body() :: @@request_type_body@@.
+-type @@name@@_request_body() :: @@types.body@@.
 
--type @@name@@_response() :: @@response_type@@.
+-type @@name@@_response() :: @@types.response@@.
 
 @@/functions@@
 
@@ -61,40 +61,40 @@
 
 -spec @@name@@(@@name@@_request(), options()) -> result(@@name@@_response()).
 @@name@@(Args, Options) ->
-  @@#path_parameters@@
+  @@#function.parameters.path@@
   Var@@pascal_name@@ = maps:get(@@snake_name@@, Args),
-  @@/path_parameters@@
+  @@/function.parameters.path@@
   Query = maps:get(query, Args, #{}),
   Header = maps:get(header, Args, #{}),
   EncodeQuery =
     fun
-      @@#query_parameters@@
+      @@#function.parameters.query@@
       ({@@snake_name@@, Value}) ->
         encode_q(@@style@@, @@explode@@, <<"@@real_name@@">>, Value);
-      @@/query_parameters@@
+      @@/function.parameters.query@@
       ({Key, Value}) ->
         [{Key, Value}]
     end,
   EncodeHeader =
     fun
-      @@#header_parameters@@
+      @@#function.parameters.header@@
       ({@@snake_name@@, Value}) ->
         encode_h(@@style@@, @@explode@@, <<"@@real_name@@">>, Value);
-      @@/header_parameters@@
+      @@/function.parameters.header@@
       ({Key, Value}) ->
         [{Key, Value}]
     end,
-  ReqPath = io_lib:format("@@path_format@@", @@path_args@@),
+  ReqPath = io_lib:format("@@function.http_path@@", @@function.http_path_args@@),
   ReqQuery =
     lists:flatmap(EncodeQuery, maps:to_list(Query)),
   ReqHeader =
     lists:flatmap(EncodeHeader, maps:to_list(Header)),
   ReqOptions = maps:get(http, Options, #{}),
-  Req = #{method => @@method@@,
+  Req = #{method => @@function.http_verb@@,
           header => ReqHeader,
           target => #{scheme => maps:get(scheme, Options, <<"https">>),
                       port => maps:get(port, Options, 443),
-                      host => maps:get(host, Options, <<"@@target_host@@">>),
+                      host => maps:get(host, Options, <<"@@function.http_host@@">>),
                       path => iolist_to_binary(ReqPath),
                       query => ReqQuery}},
   case mhttp:send_request(Req, ReqOptions) of

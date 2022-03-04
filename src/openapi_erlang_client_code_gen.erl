@@ -34,6 +34,34 @@
 
 -export([generate/3]).
 
+-export_type([state/0]).
+
+
+-type state() ::
+        #{name := binary(),
+          function :=
+            #{parameters :=
+                #{query := [parameter()],
+                  path := [parameter()],
+                  header := [parameter()],
+                  cookie := [parameter()]},
+              http_verb := atom(),
+              http_host := binary(),
+              http_path := binary(),
+              http_path_arg := binary()},
+          types := [type()]}.
+
+-type parameter() ::
+        #{pascal_name := binary(),
+          snake_name := binary(),
+          real_name := binary(),
+          style := atom(),
+          explode := boolean()}.
+
+-type type() ::
+        #{suffix := binary(),
+          definition := binary()}.
+
 
 %% -spec atom(binary()) -> binary().
 %% atom(Name) ->
@@ -103,6 +131,7 @@ generate_client_functions(Paths, PackageName, Options) ->
               HeaderParameters = openapi_parameter:headers(Parameters),
               CookieParameters = openapi_parameter:cookies(Parameters),
               Responses = openapi_operation:responses(OperationObject),
+
               FuncName = openapi_code:snake_case(Id),
               Contents0 =
                 maps:fold(
@@ -136,14 +165,7 @@ generate_client_functions(Paths, PackageName, Options) ->
                     [KeyName, Op, schema_to_typespec(Schema, #{})]
                 end,
 
-              MaybeMap =
-                fun
-                  ([]) ->
-                    <<"map()">>;
-                  (P) ->
-                    unicode:characters_to_binary(
-                      ["#{", lists:join(",", lists:map(F, P)), "}"])
-                end,
+
 
               TRequest =
                 ["#{",
@@ -164,77 +186,89 @@ generate_client_functions(Paths, PackageName, Options) ->
                         schema_to_typespec(V, #{namespace => <<PackageName/binary, "_schemas">>})
                     end, Contents0)),
 
-              #{request_type => unicode:characters_to_binary(TRequest),
-                request_type_query => MaybeMap(QueryParameters),
-                request_type_header => MaybeMap(HeaderParameters),
-                request_type_cookie => MaybeMap(CookieParameters),
-                request_type_body => <<"map()">>,
-                response_type => unicode:characters_to_binary(ResponseType),
-                name => FuncName,
-                path_parameters =>
-                  lists:map(
-                    fun (#{name := Name}) ->
-                        #{pascal_name => openapi_code:pascal_case(Name),
-                          snake_name => openapi_code:snake_case(Name)}
-                    end, PathParameters),
-                query_parameters =>
-                  lists:map(
-                    fun (#{name := Name} = Parameter) ->
-                        #{snake_name => openapi_code:snake_case(Name),
-                          real_name => Name,
-                          style => maps:get(style, Parameter, form),
-                          explode => maps:get(explode, Parameter, false)}
-                    end, QueryParameters),
-                header_parameters =>
-                  lists:map(
-                    fun (#{name := Name} = Parameter) ->
-                        #{snake_name => openapi_code:snake_case(Name),
-                          real_name => Name,
-                          style => maps:get(style, Parameter, simple),
-                          explode => maps:get(explode, Parameter, false)}
-                    end, HeaderParameters),
-                method => Verb,
-                target_host => maps:get(default_host, Options, <<>>),
-                path_format => unicode:characters_to_binary(PathFormat),
-                path_args =>
-                  unicode:characters_to_binary(
-                    ["[",
-                     lists:join(
-                       ",",
-                       lists:map(
-                         fun (Name) ->
-                             ["Var", openapi_code:pascal_case(Name)]
-                         end, VariablesNames)), "]"]),
-                responses =>
-                  maps:fold(
-                    fun (StatusCode, ResponseObject, Acc2) ->
-                        Content = maps:get(content, ResponseObject, #{}),
+              MaybeMap =
+                fun ([]) -> "map()";
+                    (P) -> ["#{", lists:join(",", lists:map(F, P)), "}"]
+                end,
+              BuildParameter =
+                fun (#{name := PName} = ParameterObject) ->
+                    #{pascal_name => openapi_code:pascal_case(PName),
+                      snake_name => openapi_code:snake_case(PName),
+                      real_name => PName,
+                      style => maps:get(style, ParameterObject, form),
+                      explode => maps:get(explode, ParameterObject, false)}
+                end,
+              Binary = fun unicode:characters_to_binary/1,
 
-                        Value =
+              State =
+                #{name => FuncName,
+                  function =>
+                    #{http_verb => Verb,
+                      http_host => maps:get(default_host, Options, <<>>),
+                      http_path => Binary(PathFormat),
+                      http_path_args =>
+                        Binary(["[",
+                                lists:join(
+                                  ",",
+                                  lists:map(
+                                    fun (Name) ->
+                                        ["Var", openapi_code:pascal_case(Name)]
+                                    end, VariablesNames)), "]"]),
+                      parameters =>
+                        #{query => lists:map(BuildParameter, QueryParameters),
+                          path => lists:map(BuildParameter, PathParameters),
+                          header => lists:map(BuildParameter, HeaderParameters),
+                          cookie => lists:map(BuildParameter, CookieParameters)}},
+                  types =>
+                    #{request => Binary(TRequest),
+                      query => Binary(MaybeMap(QueryParameters)),
+                      header => Binary(MaybeMap(HeaderParameters)),
+                      cookie => Binary(MaybeMap(CookieParameters)),
+                      body => <<"map()">>,
+                      response => Binary(ResponseType)}},
+
+              State1 =
+                State#{responses =>
+                         maps:fold(
+                           fun
+                             (StatusCode, ResponseObject, Acc2) ->
+                               Content = maps:get(content, ResponseObject, #{}),
+                               Value =
+                                 maps:fold(
+                                   fun (MediaType, MediaTypeObject, Acc3) ->
+                                       Schema = maps:get(schema, MediaTypeObject, #{}),
+                                       {ok, MT} = mhttp_media_type:parse(MediaType),
+                                       [#{media_type => MT,
+                                          jsv_schema =>
+                                            unicode:characters_to_binary(
+                                              schema_to_jsv(Schema,
+                                                            #{namespace => PackageName}))} | Acc3]
+                                   end, [], Content),
+
+                               [#{status => StatusCode, media_types => Value} | Acc2]
+                           end, [], maps:without([<<"default">>], Responses))},
+
+              State2 =
+                State1#{default_response =>
                           maps:fold(
-                            fun (MediaType, MediaTypeObject, Acc3) ->
-                                Schema = maps:get(schema, MediaTypeObject, #{}),
-                                {ok, MT} = mhttp_media_type:parse(MediaType),
-                                [#{media_type => MT,
-                                   jsv_schema => unicode:characters_to_binary(schema_to_jsv(Schema, #{namespace => PackageName}))} | Acc3]
-                            end, [], Content),
+                            fun (_, ResponseObject, Acc5) ->
+                                Contents = maps:get(content, ResponseObject, #{}),
+                                maps:fold(
+                                  fun (MediaType, MediaTypeObject, Acc6) ->
+                                      Schema = maps:get(schema, MediaTypeObject, #{}),
+                                      {ok, MT} = mhttp_media_type:parse(MediaType),
+                                      [#{media_type => MT,
+                                         jsv_schema =>
+                                           unicode:characters_to_binary(
+                                             schema_to_jsv(Schema,
+                                                           #{namespace => PackageName}))} | Acc6]
+                                  end, Acc5, Contents)
+                            end, [], maps:with([<<"default">>], Responses))},
 
-                        [#{status => StatusCode, media_types => Value} | Acc2]
-                    end, [], maps:without([<<"default">>], Responses)),
-                default_response =>
-                  maps:fold(
-                   fun (_, ResponseObject, Acc5) ->
-                       Contents = maps:get(content, ResponseObject, #{}),
-                       maps:fold(
-                         fun (MediaType, MediaTypeObject, Acc6) ->
-                             Schema = maps:get(schema, MediaTypeObject, #{}),
-                             {ok, MT} = mhttp_media_type:parse(MediaType),
-                             [#{media_type => MT,
-                                jsv_schema => unicode:characters_to_binary(schema_to_jsv(Schema, #{namespace => PackageName}))} | Acc6]
-                         end, Acc5, Contents)
-                   end, [], maps:with([<<"default">>], Responses))}
+              State2
           end, PathOperations) ++ Acc
     end, [], Paths).
+
 
 generate_jsv_file(Datetime, PackageName, Spec, Options) ->
   Schemas = maps:get(schemas, openapi:components(Spec), #{}),
