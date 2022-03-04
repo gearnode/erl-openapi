@@ -1,6 +1,6 @@
 # Introduction
 This repository contains Erlang implementation of the [OpenAPI
-specification](https://swagger.io/specification/).
+specification](https://spec.openapis.org/oas/v3.0.3.html).
 
 # Build
 You can build the library with:
