@@ -138,6 +138,10 @@ generate_client_function_request_types(Paths, PackageName, _Options) ->
 
               Name = unicode:characters_to_binary(openapi_code:snake_case(Id)),
 
+              MaybeMap = fun ([]) -> "map()";
+                             (P) -> ["#{", lists:join(",", lists:map(F, P)), "}"]
+                         end,
+
               TRequest =
                 ["#{",
                  lists:join(
@@ -149,30 +153,9 @@ generate_client_function_request_types(Paths, PackageName, _Options) ->
                     ["body => ", Name, "_request_body()"]]),
                  "}"],
 
-              TQuery =
-                if
-                  length(QueryParameters) =:= 0 ->
-                    "map()";
-                  true ->
-                    ["#{", lists:join(", ", lists:map(F, QueryParameters)), $}]
-                end,
-
-              THeader =
-                if
-                  length(HeaderParameters) =:= 0 ->
-                    "map()";
-                  true ->
-                    ["#{", lists:join(", ", lists:map(F, HeaderParameters)), $}]
-                end,
-
-              TCookie =
-                if
-                  length(CookieParameters) =:= 0 ->
-                    "map()";
-                  true ->
-                    ["#{", lists:join(", ", lists:map(F, CookieParameters)), $}]
-                end,
-
+              TQuery = MaybeMap(QueryParameters),
+              THeader = MaybeMap(HeaderParameters),
+              TCookie = MaybeMap(CookieParameters),
               TBody =
                 "map()",
 
