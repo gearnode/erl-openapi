@@ -49,7 +49,13 @@
               http_host := binary(),
               http_path := binary(),
               http_path_arg := binary()},
-          types := [type()]}.
+          types :=
+            #{request => binary(),
+              query => binary(),
+              header => binary(),
+              cookie => binary(),
+              body => binary(),
+              response => binary()}}.
 
 -type parameter() ::
         #{pascal_name := binary(),
@@ -57,10 +63,6 @@
           real_name := binary(),
           style := atom(),
           explode := boolean()}.
-
--type type() ::
-        #{suffix := binary(),
-          definition := binary()}.
 
 
 %% -spec atom(binary()) -> binary().
