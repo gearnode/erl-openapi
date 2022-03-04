@@ -9,9 +9,14 @@
 -export([@@f_name@@/1, @@f_name@@/2]).
 @@/functions@@
 
--export_type([options/0, result/1, error_reason/0]).
+-export_type([options/0, request/4, result/1, error_reason/0]).
 @@#types@@
--export_type([@@name@@_request/0, @@name@@_response/0]).
+-export_type([@@name@@_request/0,
+              @@name@@_request_query/0,
+              @@name@@_request_header/0,
+              @@name@@_request_cookie/0,
+              @@name@@_request_body/0,
+              @@name@@_response/0]).
 @@/types@@
 
 -type options() ::
@@ -20,6 +25,8 @@
           scheme => uri:scheme(),
           port => uri:port_number()}.
 
+-type request(Q, H, C, B) ::
+        #{query => Q, header => H, cookie => C, body => B}.
 
 -type result(T) ::
         {ok, T, mhttp:response()}
@@ -35,7 +42,19 @@
       | {invalid_payload, jsv:validation_error() | [jsv:validation_error()]}.
 
 @@#types@@
--type @@name@@_request() :: @@request@@.
+-type @@name@@_request() ::
+        request(@@name@@_request_query(),
+                @@name@@_request_header(),
+                @@name@@_request_cookie(),
+                @@name@@_request_body()).
+
+-type @@name@@_request_query() :: @@request_query@@.
+
+-type @@name@@_request_header() :: @@request_header@@.
+
+-type @@name@@_request_cookie() :: @@request_cookie@@.
+
+-type @@name@@_request_body() :: @@request_body@@.
 
 -type @@name@@_response() :: @@response@@.
 

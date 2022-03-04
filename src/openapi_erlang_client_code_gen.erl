@@ -136,36 +136,38 @@ generate_client_function_request_types(Paths, PackageName, _Options) ->
                       [KeyName, Op, schema_to_typespec(Schema, #{})]
                   end,
 
-              RequestType =
-                ["#{",
-                 lists:join(
-                   ", ",
-                   [["query => ",
-                     if
-                       length(QueryParameters) =:= 0 ->
-                         "map()";
-                       true ->
-                         ["#{", lists:join(", ", lists:map(F, QueryParameters)), $}]
-                     end],
-                    ["header => ",
-                     if
-                       length(HeaderParameters) =:= 0 ->
-                         "map()";
-                       true ->
-                         ["#{", lists:join(", ", lists:map(F, HeaderParameters)), $}]
-                    end],
-                    ["cookie => ",
-                     if
-                       length(CookieParameters) =:= 0 ->
-                         "map()";
-                       true ->
-                         ["#{", lists:join(", ", lists:map(F, CookieParameters)), $}]
-                     end],
-                    ["body => {binary(), term()}"]] ++ lists:map(F, PathParameters)),
-                 "}"],
+              TQuery =
+                if
+                  length(QueryParameters) =:= 0 ->
+                    "map()";
+                  true ->
+                    ["#{", lists:join(", ", lists:map(F, QueryParameters)), $}]
+                end,
+
+              THeader =
+                if
+                  length(HeaderParameters) =:= 0 ->
+                    "map()";
+                  true ->
+                    ["#{", lists:join(", ", lists:map(F, HeaderParameters)), $}]
+                end,
+
+              TCookie =
+                if
+                  length(CookieParameters) =:= 0 ->
+                    "map()";
+                  true ->
+                    ["#{", lists:join(", ", lists:map(F, CookieParameters)), $}]
+                end,
+
+              TBody =
+                "map()",
 
               #{name => unicode:characters_to_binary(openapi_code:snake_case(Id)),
-                request => unicode:characters_to_binary(RequestType),
+                request_query => unicode:characters_to_binary(TQuery),
+                request_header => unicode:characters_to_binary(THeader),
+                request_cookie => unicode:characters_to_binary(TCookie),
+                request_body => unicode:characters_to_binary(TBody),
                 response => unicode:characters_to_binary(ResponseType)}
           end, PathOperations)
     end, [], Paths).
