@@ -29,6 +29,7 @@
 -type error_reason() ::
         {mhttp, mhttp:error_reason()}
       | missing_content_type
+      | unknown_content_type
       | {invalid_content_type, mhttp_media_type:error_reason()}
       | {invalid_json, json:error_reason()}
       | {invalid_payload, jsv:validation_error() | [jsv:validation_error()]}.
@@ -115,11 +116,32 @@
                       end;
                   @@/media_types@@
                     _ ->
-                      {ok, Resp}
+                      {error, unknown_content_type, Resp}
                   end;
                 @@/responses@@
                 _ ->
-                  {ok, Resp}
+                  case MediaType of
+                  @@#default_response@@
+                    @@media_type@@ ->
+                      case json:parse(RespBody) of
+                        {ok, Data} ->
+                          ValidateOpts =
+                            #{disable_verification => true,
+                              unknown_member_handling => keep,
+                              null_member_handling => remove},
+                          case jsv:validate(Data, @@jsv_schema@@, ValidateOpts) of
+                            {ok, Schema} ->
+                              {ok, Schema, Resp};
+                            {error, Reason} ->
+                              {error, {invalid_payload, Reason}, Resp}
+                          end;
+                        {error, Reason} ->
+                          {error, {invalid_json, Reason}, Resp}
+                      end;
+                  @@/default_response@@
+                    _ ->
+                      {error, unknown_content_type, Resp}
+                  end
               end;
             {error, Reason} ->
               {error, {invalid_content_type, Reason}, Resp}

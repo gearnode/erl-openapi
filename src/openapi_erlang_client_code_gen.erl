@@ -244,7 +244,18 @@ generate_client_functions(Paths, PackageName, Options) ->
 
                         [#{status => StatusCode, media_types => Value} | Acc2]
                     end, [], maps:without([<<"default">>], Responses)),
-                default_response => #{}}
+                default_response =>
+                  maps:fold(
+                   fun (_, ResponseObject, Acc5) ->
+                       Contents = maps:get(content, ResponseObject, #{}),
+                       maps:fold(
+                         fun (MediaType, MediaTypeObject, Acc6) ->
+                             Schema = maps:get(schema, MediaTypeObject, #{}),
+                             {ok, MT} = mhttp_media_type:parse(MediaType),
+                             [#{media_type => MT,
+                                jsv_schema => unicode:characters_to_binary(schema_to_jsv(Schema, #{namespace => PackageName}))} | Acc6]
+                         end, Acc5, Contents)
+                   end, [], maps:with([<<"default">>], Responses))}
           end, PathOperations) ++ Acc
     end, [], Paths).
 
