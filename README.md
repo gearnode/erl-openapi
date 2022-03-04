@@ -2,6 +2,10 @@
 This repository contains Erlang implementation of the [OpenAPI
 specification](https://spec.openapis.org/oas/v3.0.3.html).
 
+# Abstract
+This project is currently in beta. The exposed API can change and the
+generated code may not compile.
+
 # Build
 You can build the library with:
 
