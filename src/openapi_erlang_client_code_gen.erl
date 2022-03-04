@@ -228,6 +228,7 @@ generate_client_functions(Paths, Options) ->
 generate_jsv_file(Datetime, PackageName, Spec, Options) ->
   Schemas = maps:get(schemas, openapi:components(Spec), #{}),
   Data = #{datetime => Datetime,
+           catalog_name => openapi_code:snake_case(PackageName),
            package_name => <<PackageName/binary, "_jsv">>,
            functions => [generate_jsv_catalog(Schemas, Options)] ++ generate_functions(Schemas, Options)},
   openapi_mustache:render(<<"erlang-client/jsv.erl">>, Data).
