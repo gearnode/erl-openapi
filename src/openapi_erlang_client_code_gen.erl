@@ -79,95 +79,9 @@ write_and_format_file(OutDir, Filename0, Content) ->
 generate_client_file(Datetime, PackageName, Spec, Options) ->
   Paths = openapi:paths(Spec),
   Data = #{datetime => Datetime,
-           types => generate_client_function_request_types(Paths, PackageName, Options),
            package_name => <<PackageName/binary, "_client">>,
            functions => generate_client_functions(Paths, PackageName, Options)},
   openapi_mustache:render(<<"erlang-client/client.erl">>, Data, #{disable_html_escaping => true}).
-
-
-generate_client_function_request_types(Paths, PackageName, _Options) ->
-  maps:fold(
-    fun (_, PathItemObject, Acc) ->
-        PathOperations = openapi_path:operations(PathItemObject),
-        Acc ++ lists:map(
-          fun
-            ({_, OperationObject}) ->
-              Id = openapi_operation:operation_id(OperationObject),
-              Parameters = openapi_operation:parameters(OperationObject),
-
-              QueryParameters = openapi_parameter:queries(Parameters),
-              PathParameters = openapi_parameter:paths(Parameters),
-              HeaderParameters = openapi_parameter:headers(Parameters),
-              CookieParameters = openapi_parameter:cookies(Parameters),
-              Responses = openapi_operation:responses(OperationObject),
-              Contents = maps:fold(fun (_, V, X) ->
-                                       case maps:find(content, V) of
-                                         {ok, Contents} ->
-                                           maps:fold(
-                                             fun (_, V2, X2) ->
-                                                 case maps:find(schema, V2) of
-                                                   error ->
-                                                     X2;
-                                                   {ok, V3} ->
-                                                     [V3 | X2]
-                                                 end
-                                             end, X, Contents);
-                                         error ->
-                                           X
-                                       end
-                                   end, [], Responses),
-
-              ResponseType =
-                lists:join(
-                  " | ",
-                  lists:map(
-                    fun (V) ->
-                        schema_to_typespec(V, #{namespace => <<PackageName/binary, "_schemas">>})
-                    end, Contents)),
-
-              F = fun (X) ->
-                      Op = case openapi_parameter:required(X) of
-                             true -> " := ";
-                             false -> " => "
-                           end,
-                      Name = openapi_parameter:name(X),
-                      KeyName = openapi_code:snake_case(Name),
-                      Schema = maps:get(schema, X),
-                      [KeyName, Op, schema_to_typespec(Schema, #{})]
-                  end,
-
-              Name = unicode:characters_to_binary(openapi_code:snake_case(Id)),
-
-              MaybeMap = fun ([]) -> "map()";
-                             (P) -> ["#{", lists:join(",", lists:map(F, P)), "}"]
-                         end,
-
-              TRequest =
-                ["#{",
-                 lists:join(
-                   ",",
-                   lists:map(F, PathParameters) ++
-                   [["query => ", Name, "_request_query()"],
-                    ["header => ", Name, "_request_header()"],
-                    ["cookie => ", Name, "_request_cookie()"],
-                    ["body => ", Name, "_request_body()"]]),
-                 "}"],
-
-              TQuery = MaybeMap(QueryParameters),
-              THeader = MaybeMap(HeaderParameters),
-              TCookie = MaybeMap(CookieParameters),
-              TBody =
-                "map()",
-
-              #{name => unicode:characters_to_binary(openapi_code:snake_case(Id)),
-                request => unicode:characters_to_binary(TRequest),
-                request_query => unicode:characters_to_binary(TQuery),
-                request_header => unicode:characters_to_binary(THeader),
-                request_cookie => unicode:characters_to_binary(TCookie),
-                request_body => unicode:characters_to_binary(TBody),
-                response => unicode:characters_to_binary(ResponseType)}
-          end, PathOperations)
-    end, [], Paths).
 
 generate_client_functions(Paths, PackageName, Options) ->
   maps:fold(
@@ -187,11 +101,76 @@ generate_client_functions(Paths, PackageName, Options) ->
               QueryParameters = openapi_parameter:queries(Parameters),
               PathParameters = openapi_parameter:paths(Parameters),
               HeaderParameters = openapi_parameter:headers(Parameters),
+              CookieParameters = openapi_parameter:cookies(Parameters),
               Responses = openapi_operation:responses(OperationObject),
-
               FuncName = openapi_code:snake_case(Id),
+              Contents0 =
+                maps:fold(
+                  fun (_, V, X) ->
+                      case maps:find(content, V) of
+                        {ok, Contents} ->
+                          maps:fold(
+                            fun
+                              (_, V2, X2) ->
+                                case maps:find(schema, V2) of
+                                  error ->
+                                    X2;
+                                  {ok, V3} ->
+                                    [V3 | X2]
+                                end
+                            end, X, Contents);
+                        error ->
+                          X
+                      end
+                  end, [], Responses),
 
-              #{f_name => FuncName,
+              F =
+                fun (X) ->
+                    Op = case openapi_parameter:required(X) of
+                           true -> " := ";
+                           false -> " => "
+                         end,
+                    Name = openapi_parameter:name(X),
+                    KeyName = openapi_code:snake_case(Name),
+                    Schema = maps:get(schema, X),
+                    [KeyName, Op, schema_to_typespec(Schema, #{})]
+                end,
+
+              MaybeMap =
+                fun
+                  ([]) ->
+                    <<"map()">>;
+                  (P) ->
+                    unicode:characters_to_binary(
+                      ["#{", lists:join(",", lists:map(F, P)), "}"])
+                end,
+
+              TRequest =
+                ["#{",
+                 lists:join(
+                   ",",
+                   lists:map(F, PathParameters) ++
+                   [["query => ", FuncName, "_request_query()"],
+                    ["header => ", FuncName, "_request_header()"],
+                    ["cookie => ", FuncName, "_request_cookie()"],
+                    ["body => ", FuncName, "_request_body()"]]),
+                 "}"],
+
+              ResponseType =
+                lists:join(
+                  " | ",
+                  lists:map(
+                    fun (V) ->
+                        schema_to_typespec(V, #{namespace => <<PackageName/binary, "_schemas">>})
+                    end, Contents0)),
+
+              #{request_type => unicode:characters_to_binary(TRequest),
+                request_type_query => MaybeMap(QueryParameters),
+                request_type_header => MaybeMap(HeaderParameters),
+                request_type_cookie => MaybeMap(CookieParameters),
+                request_type_body => <<"map()">>,
+                response_type => unicode:characters_to_binary(ResponseType),
+                name => FuncName,
                 path_parameters =>
                   lists:map(
                     fun (#{name := Name}) ->
