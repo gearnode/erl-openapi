@@ -182,7 +182,6 @@ generate_client_functions(Paths, PackageName, Options) ->
         lists:map(
           fun
             ({Verb, OperationObject}) ->
-
               Id = openapi_operation:operation_id(OperationObject),
               Parameters = openapi_operation:parameters(OperationObject),
 
