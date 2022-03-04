@@ -136,6 +136,19 @@ generate_client_function_request_types(Paths, PackageName, _Options) ->
                       [KeyName, Op, schema_to_typespec(Schema, #{})]
                   end,
 
+              Name = unicode:characters_to_binary(openapi_code:snake_case(Id)),
+
+              TRequest =
+                ["#{",
+                 lists:join(
+                   ",",
+                   lists:map(F, PathParameters) ++
+                   [["query => ", Name, "_request_query()"],
+                    ["header => ", Name, "_request_header()"],
+                    ["cookie => ", Name, "_request_cookie()"],
+                    ["body => ", Name, "_request_body()"]]),
+                 "}"],
+
               TQuery =
                 if
                   length(QueryParameters) =:= 0 ->
@@ -164,6 +177,7 @@ generate_client_function_request_types(Paths, PackageName, _Options) ->
                 "map()",
 
               #{name => unicode:characters_to_binary(openapi_code:snake_case(Id)),
+                request => unicode:characters_to_binary(TRequest),
                 request_query => unicode:characters_to_binary(TQuery),
                 request_header => unicode:characters_to_binary(THeader),
                 request_cookie => unicode:characters_to_binary(TCookie),
