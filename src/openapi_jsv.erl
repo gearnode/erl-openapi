@@ -418,6 +418,9 @@ schema_definition() ->
            {object,
             #{value =>
                 {one_of, [{ref, reference}, {ref, schema}]}}},
+         additionalProperties =>
+           {one_of,
+            [boolean, {ref, schema}]},
          description => string,
          format => string,
          default => any,
