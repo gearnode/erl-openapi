@@ -243,8 +243,9 @@ generate_client_functions(Paths, PackageName, Options) ->
                                        [#{media_type => MT,
                                           jsv_schema =>
                                             unicode:characters_to_binary(
-                                              schema_to_jsv(Schema,
-                                                            #{namespace => PackageName}))} | Acc3]
+                                              io_lib:format("~p",
+                                              [schema_to_jsv(Schema,
+                                                            #{namespace => PackageName})]))} | Acc3]
                                    end, [], Content),
 
                                [#{status => StatusCode, media_types => Value} | Acc2]
@@ -262,8 +263,9 @@ generate_client_functions(Paths, PackageName, Options) ->
                                       [#{media_type => MT,
                                          jsv_schema =>
                                            unicode:characters_to_binary(
-                                             schema_to_jsv(Schema,
-                                                           #{namespace => PackageName}))} | Acc6]
+                                             io_lib:format("~p",
+                                             [schema_to_jsv(Schema,
+                                                           #{namespace => PackageName})]))} | Acc6]
                                   end, Acc5, Contents)
                             end, [], maps:with([<<"default">>], Responses))},
 
@@ -293,6 +295,7 @@ generate_jsv_catalog(Schemas, _Options) ->
      "#{", lists:join(", ", Values), "}."],
   #{func => unicode:characters_to_binary(Func), name => <<"catalog">>}.
 
+-spec generate_functions(#{binary() := openapi:schema()}, map()) -> term().
 generate_functions(Schemas, Options) ->
   Iterator = maps:iterator(Schemas),
   generate_functions(maps:next(Iterator), Options, []).
@@ -303,103 +306,98 @@ generate_functions({Name0, Schema, I}, Options, Acc) ->
   Name = openapi_code:snake_case(Name0),
   Data = ["-spec ", Name, "_definition() -> jsv:definition().\n",
    Name, "_definition() ->\n",
-   schema_to_jsv(Schema, Options), $.],
+   io_lib:format("~p", [schema_to_jsv(Schema, Options)]), $.],
   Func = unicode:characters_to_binary(Data),
   X = #{func => Func, name => <<Name/binary, "_definition">>},
   generate_functions(maps:next(I), Options, [X | Acc]).
 
+-spec schema_to_jsv(openapi:schema(), map()) -> jsv:definition().
 schema_to_jsv(#{type := number, nullable := true}, _) ->
-  "{one_of, [number, null]}";
+  {one_of, [number, null]};
 schema_to_jsv(#{type := number}, _) ->
-  "number";
+  number;
 schema_to_jsv(#{type := integer, nullable := true}, _) ->
-  "{one_of, [integer, null]}";
+  {one_of, [integer, null]};
 schema_to_jsv(#{type := integer}, _) ->
-  "integer";
+  integer;
 schema_to_jsv(#{type := boolean, nullable := true}, _) ->
-  "{one_of, [boolean, null]}";
+  {one_of, [boolean, null]};
 schema_to_jsv(#{type := boolean}, _) ->
-  "boolean";
+  boolean;
 schema_to_jsv(#{type := string, enum := Values} = Schema, _) ->
-  A = lists:map(fun (X) -> [$', X, $'] end, Values),
-  B = lists:join(",", A),
-  C = ["{string, #{values => [", B, "]}}"],
-  case maps:get(nullable, Schema, false) of
+  Definition =
+    {string,
+     #{values => lists:map(fun binary_to_atom/1, Values)}},
+
+  case openapi_schema:nullable(Schema) of
     true ->
-      ["{one_of, [", C, ", null]}"];
+      {one_of, [Definition, null]};
     false ->
-      C
+      Definition
   end;
 schema_to_jsv(#{type := string, nullable := true}, _) ->
-  "{one_of, [string, null]}";
+  {one_of, [string, null]};
 schema_to_jsv(#{type := string}, _) ->
-  "string";
+  string;
 schema_to_jsv(#{'$ref' := Ref}, Options) ->
+  RefName = binary_to_atom(openapi_code:snake_case(lists:last(Ref))),
   case maps:find(namespace, Options) of
     {ok, Namespace} ->
-      ["{ref, ", Namespace, ", ", openapi_code:snake_case(lists:last(Ref)), "}"];
+      {ref, binary_to_atom(Namespace), RefName};
     error ->
-      ["{ref, ", openapi_code:snake_case(lists:last(Ref)), "}"]
+      {ref, RefName}
   end;
 schema_to_jsv(#{type := array} = Schema, Options) ->
   case maps:find(items, Schema) of
     {ok, ItemSchemas} ->
-      ["{array, #{element =>" , schema_to_jsv(ItemSchemas, Options), "}}"];
+      {array,
+       #{element => schema_to_jsv(ItemSchemas, Options)}};
     error ->
-      "array"
+      array
   end;
 schema_to_jsv(#{anyOf := Schemas, nullable := true}, Options) ->
-  A = lists:map(fun (X) -> schema_to_jsv(X, Options) end, Schemas),
-  B = lists:join(",", A),
-  ["{one_of, [", B, ", null]}"];
+  Definitions =
+    lists:map(fun (X) ->
+                  schema_to_jsv(X, Options)
+              end, Schemas),
+  {one_of, Definitions ++ [null]};
 schema_to_jsv(#{anyOf := Schemas}, Options) ->
-  A = lists:map(fun (X) -> schema_to_jsv(X, Options) end, Schemas),
-  B = lists:join(",", A),
-  ["{one_of, [", B, "]}"];
+  Definitions =
+    lists:map(fun (X) ->
+                  schema_to_jsv(X, Options)
+              end, Schemas),
+  {one_of, Definitions};
 schema_to_jsv(#{type := object} = Schema, Options) ->
-  MembersConstraint =
-    case maps:find(properties, Schema) of
-      {ok, Properties} ->
-        Members =
-          maps:fold(fun (MName, MSchema, Acc) ->
-                        MType = schema_to_jsv(MSchema, Options),
-                        [[$', openapi_code:snake_case(MName), $', " => ", MType] | Acc]
-                    end, [], Properties),
-        Members2 = lists:join(", ", Members),
-        ["members => ", "#{", Members2, $}];
-      error ->
-        undefined
-    end,
-  RequiredConstraint =
-    case maps:find(required, Schema) of
-      {ok, Required} ->
-        Required2 = lists:join(", ", [[$', openapi_code:snake_case(M), $'] || M <- Required]),
-        ["required =>  ", $[, Required2, $]];
-      error ->
-        undefined
-    end,
-  ValueConstraint =
-    case maps:get(additionalProperties, Schema, true) of
+  Definition =
+    #{members =>
+        maps:fold(fun (Key, Value, Acc) ->
+                      Definition = schema_to_jsv(Value, Options),
+                      Name = binary_to_atom(openapi_code:snake_case(Key)),
+                      Acc#{Name => Definition}
+                  end, #{}, openapi_schema:properties(Schema)),
+      required =>
+        lists:map(fun (Key) ->
+                      binary_to_atom(openapi_code:snake_case(Key))
+                  end, openapi_schema:required(Schema))},
+
+  Definition1 =
+    case openapi_schema:additional_properties(Schema) of
       true ->
-        ["value => any"];
+        Definition#{value => any};
       false ->
-        undefined;
-      AdditionalSchema ->
-        Value = schema_to_jsv(AdditionalSchema, Options),
-        ["value => ", Value]
-      end,
-  Constraints0 = [MembersConstraint, RequiredConstraint, ValueConstraint],
-  Constraints = [C || C <- Constraints0, C /= undefined],
-  ConstraintsData = lists:join(", ", Constraints),
-  X = ["{object, #{", ConstraintsData, "}}"],
-  case maps:get(nullable, Schema, false) of
+        Definition;
+      AdditionalProperties ->
+        Definition#{value => schema_to_jsv(AdditionalProperties, Options)}
+    end,
+
+  case openapi_schema:nullable(Schema) of
     true ->
-      ["{one_of, [", X, ", null]}"];
+      {one_of, [{object, Definition1}, null]};
     false ->
-      X
+      {object, Definition1}
   end;
 schema_to_jsv(_, _) ->
-  ["any"].
+  any.
 
 generate_model_file(Datetime, PackageName, Spec, Options) ->
   Components = openapi:components(Spec),
