@@ -379,16 +379,14 @@ schema_to_jsv(#{type := object} = Schema, Options) ->
         undefined
     end,
   ValueConstraint =
-    case maps:find(additionalProperties, Schema) of
-      {ok, true} ->
+    case maps:get(additionalProperties, Schema, true) of
+      true ->
         ["value => any"];
-      {ok, false} ->
+      false ->
         undefined;
-      {ok, AdditionalSchema} ->
+      AdditionalSchema ->
         Value = schema_to_jsv(AdditionalSchema, Options),
-        ["value => ", Value];
-      error ->
-        undefined
+        ["value => ", Value]
       end,
   Constraints0 = [MembersConstraint, RequiredConstraint, ValueConstraint],
   Constraints = [C || C <- Constraints0, C /= undefined],
@@ -449,8 +447,18 @@ schema_to_typespec(#{type := object, properties := Props} = Schema, Options) ->
             end,
           [[$', Name, $', Operator, schema_to_typespec(Schema2, Options)] | Acc]
       end,
-  Definition = maps:fold(F, [], Props),
-  [$#, ${, lists:join(", ", Definition), $}];
+  AdditionalType =
+    case maps:get(additionalProperties, Schema, true) of
+      true ->
+        ["_ := json:value()"];
+      false ->
+        [];
+      AdditionalSchema ->
+        [["_ := ", schema_to_typespec(AdditionalSchema, Options)]]
+      end,
+  ["#{",
+   lists:join(",", maps:fold(F, [], Props) ++ AdditionalType),
+   "}"];
 schema_to_typespec(#{type := object, nullable := true}, _) ->
   "json:value() | null";
 schema_to_typespec(#{type := object}, _) ->
