@@ -436,7 +436,7 @@ type_comment(Name, Schema, Options) ->
 
 -spec schema_to_typespec(openapi:schema(), map()) -> iodata().
 schema_to_typespec(#{type := object, properties := Props} = Schema, Options) ->
-  Required = maps:get(required, Schema, []),
+  Required = openapi_schema:required(Schema),
   F = fun (Name, Schema2, Acc) ->
           Operator =
             case lists:member(Name, Required) of
@@ -446,7 +446,7 @@ schema_to_typespec(#{type := object, properties := Props} = Schema, Options) ->
           [[$', Name, $', Operator, schema_to_typespec(Schema2, Options)] | Acc]
       end,
   AdditionalType =
-    case maps:get(additionalProperties, Schema, true) of
+    case openapi_schema:additional_properties(Schema) of
       true ->
         ["_ := json:value()"];
       false ->
