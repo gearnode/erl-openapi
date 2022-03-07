@@ -253,7 +253,7 @@
           required => nonempty_list(binary()),
           enum => nonempty_list(json:value()),
 
-          type => binary(),
+          type => object | string | integer | number | array | boolean | '$ref',
           allOf => [schema()],
           oneOf => [schema()],
           anyOf => [schema()],
