@@ -17,7 +17,7 @@
 -export([schema/1]).
 
 -spec schema(openapi:components()) -> openapi:schema() | map().
-schema(#{schema := Schema}) ->
-  Schema;
+schema(#{schemas := Schemas}) ->
+  Schemas;
 schema(_) ->
   #{}.
