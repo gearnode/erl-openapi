@@ -91,7 +91,7 @@ generate(Spec, OutDir, Options) ->
   F4 = generate_client_file(Datetime, PackageName, Spec, Options),
 
   write_and_format_file(OutDir, <<PackageName/binary, "_openapi.erl">>, F1),
-  write_and_format_file(OutDir, <<PackageName/binary, "_schemas.erl">>, F2),
+  write_and_format_file(OutDir, <<PackageName/binary, "_model.erl">>, F2),
   write_and_format_file(OutDir, <<PackageName/binary, "_jsv.erl">>, F3),
   write_and_format_file(OutDir, <<PackageName/binary, "_client.erl">>, F4),
   ok.
@@ -185,7 +185,7 @@ generate_client_functions(Paths, PackageName, Options) ->
                   " | ",
                   lists:map(
                     fun (V) ->
-                        schema_to_typespec(V, #{namespace => <<PackageName/binary, "_schemas">>})
+                        schema_to_typespec(V, #{namespace => <<PackageName/binary, "_model">>})
                     end, Contents0)),
 
               MaybeMap =
@@ -408,7 +408,7 @@ generate_model_file(Datetime, PackageName, Spec, Options) ->
   Schemas = openapi_components:schema(Components),
 
   Data = #{datetime => Datetime,
-           package_name => <<PackageName/binary, "_schemas">>,
+           package_name => <<PackageName/binary, "_model">>,
            types => generate_types(Schemas, Options),
            functions => []},
   openapi_mustache:render(<<"erlang-client/model.erl">>, Data).
