@@ -393,7 +393,6 @@ schema_to_jsv(#{type := object} = Schema, Options) ->
                       binary_to_atom(openapi_code:snake_case(Key))
                   end, openapi_schema:required(Schema))},
 
-
   %% Additionalproperties cannot currently be handle by JSV.
   %% We use 'keep' option to handle the additionalproperties.
   %%
