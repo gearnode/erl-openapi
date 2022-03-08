@@ -393,21 +393,26 @@ schema_to_jsv(#{type := object} = Schema, Options) ->
                       binary_to_atom(openapi_code:snake_case(Key))
                   end, openapi_schema:required(Schema))},
 
-  Definition1 =
-    case openapi_schema:additional_properties(Schema) of
-      true ->
-        Definition#{value => any};
-      false ->
-        Definition;
-      AdditionalProperties ->
-        Definition#{value => schema_to_jsv(AdditionalProperties, Options)}
-    end,
+
+  %% Additionalproperties cannot currently be handle by JSV.
+  %% We use 'keep' option to handle the additionalproperties.
+  %%
+  %% Definition1 =
+  %%   case openapi_schema:additional_properties(Schema) of
+  %%     true ->
+  %%       Definition;
+  %%     false ->
+  %%       Definition;
+  %%     AdditionalProperties ->
+  %%       throw({mdr}),
+  %%       Definition#{value => schema_to_jsv(AdditionalProperties, Options)}
+  %%   end,
 
   case openapi_schema:nullable(Schema) of
     true ->
-      {one_of, [{object, Definition1}, null]};
+      {one_of, [{object, Definition}, null]};
     false ->
-      {object, Definition1}
+      {object, Definition}
   end;
 schema_to_jsv(_, _) ->
   any.
