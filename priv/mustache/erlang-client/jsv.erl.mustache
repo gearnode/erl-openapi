@@ -5,25 +5,22 @@
 
 -export([register_catalog/0, verify_catalog/0, unregister_catalog/0]).
 
-@@#functions@@
--export([@@name@@/0]).
-@@/functions@@
+-export([catalog/0, catalog_name/0]).
 
--spec register_catalog() -> jsv:catalog_table_name().
-register_catalog() ->
-  jsv:register_catalog(@@catalog_name@@, catalog()).
+@@#definitions@@
+-export([@@name@@_definition/0]).
+@@/definitions@@
 
--spec verify_catalog() -> ok | {error, Reason}
-          when Reason :: [jsv:definition_error_reason()]
-                       | {unknown_catalog, jsv:catalog_name()}.
-verify_catalog() ->
-  jsv:verify_catalog(@@catalog_name@@, #{}).
+-spec catalog_name() -> jsv:catalog_name().
+catalog_name() ->
+  @@catalog.name@@.
 
--spec unregister_catalog() -> ok.
-unregister_catalog() ->
-  jsv_catalog_registry:unregister_catalog(@@catalog_name@@).
+-spec catalog() -> jsv:catalog().
+catalog() ->
+  @@catalog.definition@@.
 
-@@#functions@@
-@@func@@
-
-@@/functions@@
+@@#definitions@@
+-spec @@name@@_definition() -> jsv:definition().
+@@name@@_definition() ->
+  @@definition@@.
+@@/definitions@@

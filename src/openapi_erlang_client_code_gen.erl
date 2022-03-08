@@ -274,42 +274,53 @@ generate_client_functions(Paths, PackageName, Options) ->
     end, [], Paths).
 
 
-generate_jsv_file(Datetime, PackageName, Spec, Options) ->
-  Schemas = maps:get(schemas, openapi:components(Spec), #{}),
-  Data = #{datetime => Datetime,
-           catalog_name => openapi_code:snake_case(PackageName),
-           package_name => <<PackageName/binary, "_jsv">>,
-           functions => [generate_jsv_catalog(Schemas, Options)] ++ generate_functions(Schemas, Options)},
-  openapi_mustache:render(<<"erlang-client/jsv.erl">>, Data).
+generate_jsv_file(Now, PackageName, Spec, Options) ->
+  DefaultContext =
+    #{datetime => Now,
+      package_name => <<PackageName/binary, "_jsv">>},
+  Context =
+    maps:merge(DefaultContext, jsv_mustache_context(Spec, Options)),
+  openapi_mustache:render(<<"erlang-client/jsv.erl">>, Context).
 
+-spec jsv_mustache_context(openapi:specification(), map()) -> map().
+jsv_mustache_context(Specification, Options) ->
+  Components = openapi:components(Specification),
+  Schemas = openapi_components:schema(Components),
 
-generate_jsv_catalog(Schemas, _Options) ->
-  Values =
-    maps:fold(fun (Name0, _, Acc) ->
-                  Name = openapi_code:snake_case(Name0),
-                  [[Name, " => ", [Name, "_definition()"]] | Acc]
-              end, [], Schemas),
-  Func =
-    ["-spec catalog() -> jsv:catalog().\n",
-     "catalog() ->\n",
-     "#{", lists:join(", ", Values), "}."],
-  #{func => unicode:characters_to_binary(Func), name => <<"catalog">>}.
+  #{definitions => jsv_definitions(Schemas, Options),
+    catalog => jsv_catalog(Schemas, Options)}.
 
--spec generate_functions(#{binary() := openapi:schema()}, map()) -> term().
-generate_functions(Schemas, Options) ->
-  Iterator = maps:iterator(Schemas),
-  generate_functions(maps:next(Iterator), Options, []).
+-spec jsv_definitions(Schemas, Options) -> Context
+          when Schemas :: #{binary() := openapi:schema()},
+               Options :: map(),
+               Context :: [#{name := binary(),
+                             definition := jsv:definition()}].
+jsv_definitions(Schemas, Options) ->
+  lists:reverse(
+    maps:fold(
+      fun (Key, Schema, Acc) ->
+          Context =
+            #{name => openapi_code:snake_case(Key),
+              definition => schema_to_jsv(Schema, Options)},
 
-generate_functions(none, _, Acc) ->
-  lists:reverse(Acc);
-generate_functions({Name0, Schema, I}, Options, Acc) ->
-  Name = openapi_code:snake_case(Name0),
-  Data = ["-spec ", Name, "_definition() -> jsv:definition().\n",
-   Name, "_definition() ->\n",
-   io_lib:format("~p", [schema_to_jsv(Schema, Options)]), $.],
-  Func = unicode:characters_to_binary(Data),
-  X = #{func => Func, name => <<Name/binary, "_definition">>},
-  generate_functions(maps:next(I), Options, [X | Acc]).
+          [Context | Acc]
+      end, [], Schemas)).
+
+-spec jsv_catalog(Schemas, Options) -> Context
+          when Schemas :: #{binary() := openapi:schema()},
+               Options :: map(),
+               Context :: #{name := binary(), definition := binary()}.
+jsv_catalog(Schemas, Options) ->
+  PackageName = maps:get(package_name, Options),
+  KV =
+    maps:fold(
+      fun (Key, _, Acc) ->
+          Name = openapi_code:snake_case(Key),
+          [[Name, " => ", Name, "_definition()"] | Acc]
+      end, [], Schemas),
+  Map = ["#{", lists:join(",", KV), "}"],
+  #{name => openapi_code:snake_case(PackageName),
+    definition => unicode:characters_to_binary(Map)}.
 
 -spec schema_to_jsv(openapi:schema(), map()) -> jsv:definition().
 schema_to_jsv(#{type := number, nullable := true}, _) ->
