@@ -125,14 +125,14 @@
                     @@media_type@@ ->
                       case json:parse(RespBody) of
                         {ok, Data} ->
-                          Schema = @@jsv_schema@@,
+                          JSVSchema = @@jsv_schema@@,
                           ValidateOpts =
                             #{disable_verification => true,
                               unknown_member_handling => keep,
                               null_member_handling => remove},
-                          case jsv:validate(Data, Schema, ValidateOpts) of
-                            {ok, Schema} ->
-                              {ok, Schema, Resp};
+                          case jsv:validate(Data, JSVSchema, ValidateOpts) of
+                            {ok, Term} ->
+                              {ok, Term, Resp};
                             {error, Errors} ->
                               {error, #{reason =>
                                           {invalid_payload, {jsv, Errors}},
