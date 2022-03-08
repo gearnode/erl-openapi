@@ -37,10 +37,10 @@
 -type error_reason() ::
         {mhttp, mhttp:error_reason()}
       | missing_content_type
-      | unknown_content_type
+      | unsupported_content_type
       | {invalid_content_type, mhttp_media_type:error_reason()}
-      | {invalid_json, json:error_reason()}
-      | {invalid_payload, [jsv:value_error()]}.
+      | {invalid_payload, {json, json:error()}}
+      | {invalid_payload, {jsv, [jsv:value_error()]}}.
 
 @@#functions@@
 -type @@name@@_request() :: @@types.request@@.
@@ -124,19 +124,20 @@
                           case jsv:validate(Data, @@jsv_schema@@, ValidateOpts) of
                             {ok, Schema} ->
                               {ok, Schema, Resp};
-                            {error, Reason} ->
-                              {error, #{reason => {invalid_payload, Reason},
+                            {error, Errors} ->
+                              {error, #{reason =>
+                                          {invalid_payload, {jsv, Errors}},
                                         request => Req,
                                         response => Resp}}
                           end;
-                        {error, Reason} ->
-                          {error, #{reason => {invalid_json, Reason},
+                        {error, Error} ->
+                          {error, #{reason => {invalid_payload, {json, Error}},
                                     request => Req,
                                     response => Resp}}
                       end;
                   @@/media_types@@
                     _ ->
-                      {error, #{reason => unknown_content_type,
+                      {error, #{reason => unsupported_content_type,
                                 request => Req,
                                 response => Resp}}
                   end;
@@ -154,19 +155,20 @@
                           case jsv:validate(Data, @@jsv_schema@@, ValidateOpts) of
                             {ok, Schema} ->
                               {ok, Schema, Resp};
-                            {error, Reason} ->
-                              {error, #{reason => {invalid_payload, Reason},
+                            {error, Errors} ->
+                              {error, #{reason =>
+                                          {invalid_payload, {jsv, Errors}},
                                         request => Req,
                                         response => Resp}}
                           end;
-                        {error, Reason} ->
-                          {error, #{reason => {invalid_json, Reason},
+                        {error, ReasonError} ->
+                          {error, #{reason => {invalid_payload, {json, Error}},
                                     request => Req,
                                     response => Resp}}
                       end;
                   @@/default_response@@
                     _ ->
-                      {error, #{reason => unknown_content_type,
+                      {error, #{reason => unsupported_content_type,
                                 request => Req,
                                 response => Resp}}
                   end
