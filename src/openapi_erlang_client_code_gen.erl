@@ -14,22 +14,6 @@
 
 -module(openapi_erlang_client_code_gen).
 
--import(prettypr,
-        [text/1,
-         null_text/1,
-         nest/2,
-         above/2,
-         beside/2,
-         sep/1,
-         par/1,
-         par/2,
-         floating/3,
-         floating/1,
-         break/1,
-         follow/2,
-         follow/3,
-         empty/0]).
-
 -export_type([error_reason/0]).
 
 -export([generate/3]).
@@ -518,42 +502,13 @@ schema_to_typespec(#{'$ref' := Ref}, Options) ->
 schema_to_typespec(_, _) ->
   "json:value()".
 
-generate_openapi_file(Datetime, PackageName, Spec, _Options) ->
-  Data = #{datetime => Datetime,
-           package_name => <<PackageName/binary, "_openapi">>,
-           functions => [info_fun_0(Spec), servers_fun_0(Spec)]},
-  openapi_mustache:render(<<"erlang-client/openapi.erl">>, Data).
+generate_openapi_file(Datetime, PackageName, Specification, _Options) ->
+  Info = openapi:info(Specification),
+  Servers = openapi:servers(Specification),
 
--spec info_fun_0(openapi:specification()) -> binary().
-info_fun_0(#{info := Info}) ->
-  Data = io_lib:format("~p.", [Info]),
-  Lines = string:split(Data, "\n", all),
-  Documents = lists:map(fun (Line) -> text(Line) end, Lines),
-  iolist_to_binary(
-    prettypr:format(
-      sep(
-        [beside(
-           break(text("-spec info() -> info().")),
-           break(text("info() ->"))),
-         nest(4, beside(
-                   sep(Documents),
-                   empty())),
-         empty()]))).
-
--spec servers_fun_0(openapi:specification()) -> iodata().
-servers_fun_0(#{servers := Servers}) ->
-  Data = io_lib:format("~p.", [Servers]),
-  Lines = string:split(Data, "\n", all),
-  Documents = lists:map(fun (Line) -> text(Line) end, Lines),
-  iolist_to_binary(
-    prettypr:format(
-      sep(
-        [beside(
-           break(text("-spec servers() -> [server()].")),
-           break(text("servers() ->"))),
-         nest(4, beside(
-                   sep(Documents),
-                   empty())),
-         empty()])));
-servers_fun_0(_) ->
-  "".
+  Context =
+    #{datetime => Datetime,
+      package_name => <<PackageName/binary, "_openapi">>,
+      info => Info,
+      servers => Servers},
+  openapi_mustache:render(<<"erlang-client/openapi.erl">>, Context).
