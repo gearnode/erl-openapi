@@ -36,7 +36,7 @@
       | unknown_content_type
       | {invalid_content_type, mhttp_media_type:error_reason()}
       | {invalid_json, json:error_reason()}
-      | {invalid_payload, jsv:validation_error() | [jsv:validation_error()]}.
+      | {invalid_payload, [jsv:value_error()]}.
 
 @@#functions@@
 -type @@name@@_request() :: @@types.request@@.
