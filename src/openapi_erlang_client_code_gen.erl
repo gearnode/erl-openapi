@@ -179,7 +179,7 @@ generate_client_functions(Paths, PackageName, Options) ->
                    [["query => ", FuncName, "_request_query()"],
                     ["header => ", FuncName, "_request_header()"],
                     ["cookie => ", FuncName, "_request_cookie()"],
-                    ["body", BodyOp, FuncName, "_request_body()"]]),
+                    ["body", BodyOp, "{binary(), ", FuncName, "_request_body()}"]]),
                  "}"],
 
               ResponseType =
