@@ -9,32 +9,32 @@
 -export([info/0, servers/0]).
 
 -type info() ::
-          #{title := binary(),
-            description => binary(),
-            termsOfService => binary(),
-            contact => contact(),
-            license => license(),
-            version := binary()}.
+        #{title := binary(),
+          description => binary(),
+          termsOfService => binary(),
+          contact => contact(),
+          license => license(),
+          version := binary()}.
 
 -type contact() ::
-          #{name => binary(),
-            url => binary(),
-            email => binary()}.
+        #{name => binary(),
+          url => binary(),
+          email => binary()}.
 
 -type license() ::
-          #{name := binary(),
-            url => binary()}.
+        #{name := binary(),
+          url => binary()}.
 
 -type server() ::
-          #{url := binary(),
-            description => binary(),
-            variables =>
-                #{binary() := server_variable()}}.
+        #{url := binary(),
+          description => binary(),
+          variables =>
+            #{binary() := server_variable()}}.
 
 -type server_variable() ::
-          #{enum => [binary()],
-            default := binary(),
-            description => binary()}.
+        #{enum => [binary()],
+          default := binary(),
+          description => binary()}.
 
 -spec info() -> info().
 info() ->
