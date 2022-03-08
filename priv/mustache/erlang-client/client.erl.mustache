@@ -23,7 +23,8 @@
         #{request_options => mhttp:request_options(),
           host => uri:host(),
           scheme => uri:scheme(),
-          port => uri:port_number()}.
+          port => uri:port_number(),
+          header => mhttp:header()}.
 
 -type result(T) ::
         {ok, T, mhttp:response()}
@@ -91,8 +92,15 @@
   ReqPath = io_lib:format("@@function.http_path@@", @@function.http_path_args@@),
   ReqQuery =
     lists:flatmap(EncodeQuery, maps:to_list(Query)),
-  ReqHeader =
+  ReqHeader0 =
     lists:flatmap(EncodeHeader, maps:to_list(Header)),
+  ReqHeader =
+    case maps:find(header, Options) of
+      {ok, ExtraHeader} ->
+        mhttp_header:append(ReqHeader0, ExtraHeader);
+      error ->
+        ReqHeader0
+    end,
   ReqOptions = maps:get(request_options, Options, #{}),
   Req = #{method => @@function.http_verb@@,
           header => ReqHeader,
