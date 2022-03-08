@@ -14,7 +14,8 @@
 
 -module(openapi_schema).
 
--export([additional_properties/1, required/1, properties/1, nullable/1]).
+-export([additional_properties/1, required/1, properties/1, nullable/1,
+         description/1]).
 
 -spec additional_properties(openapi:schema()) -> boolean() | openapi:schema().
 additional_properties(#{additionalProperties := Value}) ->
@@ -39,3 +40,9 @@ nullable(#{nullable := true}) ->
   true;
 nullable(_) ->
   false.
+
+-spec description(openapi:schema()) -> binary().
+description(#{description := Description}) ->
+  Description;
+description(_) ->
+  <<>>.
