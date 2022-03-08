@@ -163,7 +163,13 @@ generate_client_functions(Paths, PackageName, Options) ->
                     [KeyName, Op, schema_to_typespec(Schema, #{})]
                 end,
 
-
+              BodyOp =
+                case openapi_request_body:required(RequestBody) of
+                  true ->
+                    " := ";
+                  false ->
+                    " => "
+                end,
 
               TRequest =
                 ["#{",
@@ -173,7 +179,7 @@ generate_client_functions(Paths, PackageName, Options) ->
                    [["query => ", FuncName, "_request_query()"],
                     ["header => ", FuncName, "_request_header()"],
                     ["cookie => ", FuncName, "_request_cookie()"],
-                    ["body => ", FuncName, "_request_body()"]]),
+                    ["body", BodyOp, FuncName, "_request_body()"]]),
                  "}"],
 
               ResponseType =
