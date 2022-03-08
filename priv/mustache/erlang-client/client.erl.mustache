@@ -161,7 +161,7 @@
                                         request => Req,
                                         response => Resp}}
                           end;
-                        {error, ReasonError} ->
+                        {error, Error} ->
                           {error, #{reason => {invalid_payload, {json, Error}},
                                     request => Req,
                                     response => Resp}}
