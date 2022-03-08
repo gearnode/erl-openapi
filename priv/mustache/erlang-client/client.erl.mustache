@@ -20,7 +20,7 @@
 @@/functions@@
 
 -type options() ::
-        #{http => mhttp:request_options(),
+        #{request_options => mhttp:request_options(),
           host => uri:host(),
           scheme => uri:scheme(),
           port => uri:port_number()}.
@@ -89,7 +89,7 @@
     lists:flatmap(EncodeQuery, maps:to_list(Query)),
   ReqHeader =
     lists:flatmap(EncodeHeader, maps:to_list(Header)),
-  ReqOptions = maps:get(http, Options, #{}),
+  ReqOptions = maps:get(request_options, Options, #{}),
   Req = #{method => @@function.http_verb@@,
           header => ReqHeader,
           target => #{scheme => maps:get(scheme, Options, <<"https">>),
