@@ -117,11 +117,12 @@
                     @@media_type@@ ->
                       case json:parse(RespBody) of
                         {ok, Data} ->
+                          Schema = @@jsv_schema@@,
                           ValidateOpts =
                             #{disable_verification => true,
                               unknown_member_handling => keep,
                               null_member_handling => remove},
-                          case jsv:validate(Data, @@jsv_schema@@, ValidateOpts) of
+                          case jsv:validate(Data, Schema, ValidateOpts) of
                             {ok, Schema} ->
                               {ok, Schema, Resp};
                             {error, Errors} ->
