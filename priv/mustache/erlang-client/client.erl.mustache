@@ -9,7 +9,7 @@
 -export([@@name@@/1, @@name@@/2]).
 @@/functions@@
 
--export_type([options/0, result/1, error_reason/0]).
+-export_type([options/0, result/1, error/0, error_reason/0]).
 @@#functions@@
 -export_type([@@name@@_request/0,
               @@name@@_request_query/0,
@@ -27,8 +27,12 @@
 
 -type result(T) ::
         {ok, T, mhttp:response()}
-      | {error, error_reason()}
-      | {error, error_reason(), mhttp:response()}.
+      | {error, error()}.
+
+-type error() ::
+        #{reason := error_reason(),
+          request => mhttp:request(),
+          response => mhttp:response()}.
 
 -type error_reason() ::
         {mhttp, mhttp:error_reason()}
@@ -121,14 +125,20 @@
                             {ok, Schema} ->
                               {ok, Schema, Resp};
                             {error, Reason} ->
-                              {error, {invalid_payload, Reason}, Resp}
+                              {error, #{reason => {invalid_payload, Reason},
+                                        request => Req,
+                                        response => Resp}}
                           end;
                         {error, Reason} ->
-                          {error, {invalid_json, Reason}, Resp}
+                          {error, #{reason => {invalid_json, Reason},
+                                    request => Req,
+                                    response => Resp}}
                       end;
                   @@/media_types@@
                     _ ->
-                      {error, unknown_content_type, Resp}
+                      {error, #{reason => unknown_content_type,
+                                request => Req,
+                                response => Resp}}
                   end;
                 @@/responses@@
                 _ ->
@@ -145,24 +155,35 @@
                             {ok, Schema} ->
                               {ok, Schema, Resp};
                             {error, Reason} ->
-                              {error, {invalid_payload, Reason}, Resp}
+                              {error, #{reason => {invalid_payload, Reason},
+                                        request => Req,
+                                        response => Resp}}
                           end;
                         {error, Reason} ->
-                          {error, {invalid_json, Reason}, Resp}
+                          {error, #{reason => {invalid_json, Reason},
+                                    request => Req,
+                                    response => Resp}}
                       end;
                   @@/default_response@@
                     _ ->
-                      {error, unknown_content_type, Resp}
+                      {error, #{reason => unknown_content_type,
+                                request => Req,
+                                response => Resp}}
                   end
               end;
             {error, Reason} ->
-              {error, {invalid_content_type, Reason}, Resp}
+              {error, #{reason => {invalid_content_type, Reason},
+                        request => Req,
+                        response => Resp}}
           end;
         error ->
-          {error, missing_content_type, Resp}
+          {error, #{reason => missing_content_type,
+                    request => Req,
+                    response => Resp}}
       end;
     {error, Reason} ->
-      {error, {mhttp, Reason}}
+      {error, #{reason => {mhttp, Reason},
+                request => Req}}
   end.
 @@/functions@@
 
