@@ -17,11 +17,11 @@
 -export([contents/1, description/1, required/1]).
 
 -spec contents(openapi:request_body()) ->
-        #{binary() := openapi:media_type()} | map().
+        [{binary(), openapi:media_type()}].
 contents(#{content := Contents}) ->
   maps:to_list(Contents);
 contents(_) ->
-  #{}.
+  [].
 
 -spec description(openapi:request_body()) -> binary().
 description(#{description := Description}) ->
