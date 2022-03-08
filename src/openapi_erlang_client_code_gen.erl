@@ -311,13 +311,13 @@ jsv_definitions(Schemas, Options) ->
                Options :: map(),
                Context :: #{name := binary(), definition := binary()}.
 jsv_catalog(Schemas, Options) ->
+  F =
+    fun (Key, _, Acc) ->
+        Name = openapi_code:snake_case(Key),
+        [[Name, " => ", Name, "_definition()"] | Acc]
+    end,
   PackageName = maps:get(package_name, Options),
-  KV =
-    maps:fold(
-      fun (Key, _, Acc) ->
-          Name = openapi_code:snake_case(Key),
-          [[Name, " => ", Name, "_definition()"] | Acc]
-      end, [], Schemas),
+  KV = maps:fold(F, [], Schemas),
   Map = ["#{", lists:join(",", KV), "}"],
   #{name => openapi_code:snake_case(PackageName),
     definition => unicode:characters_to_binary(Map)}.
