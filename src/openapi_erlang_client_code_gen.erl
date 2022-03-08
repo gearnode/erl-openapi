@@ -118,6 +118,18 @@ generate_client_functions(Paths, PackageName, Options) ->
               CookieParameters = openapi_parameter:cookies(Parameters),
               Responses = openapi_operation:responses(OperationObject),
 
+              RequestBody = openapi_operation:request_body(OperationObject),
+
+
+              TReqBody =
+                lists:join(
+                  " | ",
+                  lists:map(
+                    fun ({_ContentType, MediaType}) ->
+                        Schema = openapi_media_type:schema(MediaType),
+                        schema_to_typespec(Schema, #{})
+                    end, openapi_request_body:contents(RequestBody))),
+
               FuncName = openapi_code:snake_case(Id),
               Contents0 =
                 maps:fold(
@@ -210,7 +222,7 @@ generate_client_functions(Paths, PackageName, Options) ->
                       query => Binary(MaybeMap(QueryParameters)),
                       header => Binary(MaybeMap(HeaderParameters)),
                       cookie => Binary(MaybeMap(CookieParameters)),
-                      body => <<"map()">>,
+                      body => Binary(TReqBody),
                       response => Binary(ResponseType)}},
 
               State1 =
