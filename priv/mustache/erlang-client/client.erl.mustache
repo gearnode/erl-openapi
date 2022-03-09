@@ -52,6 +52,8 @@
 
 -type @@name@@_request_cookie() :: @@types.cookie@@.
 
+-type @@name@@_request_path() :: @@types.path@@.
+
 -type @@name@@_request_body() :: @@types.body@@.
 
 -type @@name@@_response() :: @@types.response@@.
@@ -101,9 +103,11 @@
       error ->
         ReqHeader0
     end,
+  ReqBody = <<>>,
   ReqOptions = maps:get(request_options, Options, #{}),
   Req = #{method => @@function.http_verb@@,
           header => ReqHeader,
+          body => ReqBody,
           target => #{scheme => maps:get(scheme, Options, <<"https">>),
                       port => maps:get(port, Options, 443),
                       host => maps:get(host, Options, <<"@@function.http_host@@">>),

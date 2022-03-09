@@ -171,16 +171,23 @@ generate_client_functions(Paths, PackageName, Options) ->
                     " => "
                 end,
 
+              ParameterOp =
+                fun (P) ->
+                    case lists:any(fun openapi_parameter:required/1, P) of
+                      true ->
+                        " := ";
+                      false ->
+                        " => "
+                    end
+                end,
+
               TRequest =
                 ["#{",
-                 lists:join(
-                   ",",
-                   lists:map(F, PathParameters) ++
-                   [["query => ", FuncName, "_request_query()"],
-                    ["header => ", FuncName, "_request_header()"],
-                    ["cookie => ", FuncName, "_request_cookie()"],
-                    ["body", BodyOp, "{binary(), ", FuncName, "_request_body()}"]]),
-                 "}"],
+                 "query", ParameterOp(QueryParameters), FuncName, "_request_query(),",
+                 "header", ParameterOp(HeaderParameters), FuncName, "_request_header(),",
+                 "cookie", ParameterOp(CookieParameters), FuncName, "_request_cookie(),",
+                 "path", ParameterOp(PathParameters), FuncName, "_request_path(),",
+                 "body", BodyOp, "{binary(), ", FuncName, "_request_body()}}"],
 
               ResponseType =
                 lists:join(
@@ -228,6 +235,7 @@ generate_client_functions(Paths, PackageName, Options) ->
                       query => Binary(MaybeMap(QueryParameters)),
                       header => Binary(MaybeMap(HeaderParameters)),
                       cookie => Binary(MaybeMap(CookieParameters)),
+                      path => Binary(MaybeMap(PathParameters)),
                       body => Binary(TReqBody),
                       response => Binary(ResponseType)}},
 
