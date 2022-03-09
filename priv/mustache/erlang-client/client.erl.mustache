@@ -96,14 +96,29 @@
     lists:flatmap(EncodeQuery, maps:to_list(Query)),
   ReqHeader0 =
     lists:flatmap(EncodeHeader, maps:to_list(Header)),
-  ReqHeader =
+  ReqHeader1 =
     case maps:find(header, Options) of
       {ok, ExtraHeader} ->
         mhttp_header:append(ReqHeader0, ExtraHeader);
       error ->
         ReqHeader0
     end,
-  ReqBody = <<>>,
+  {ReqHeader, ReqBody} =
+    case maps:find(body, Args) of
+      {ok, {BodyContentType, _BodyData}} ->
+        ReqHeader2 =
+          mhttp_header:append({<<"Content-Type">>, BodyContentType}),
+        EncodedBody =
+          case BodyContentType of
+            <<"application/x-www-form-urlencoded">> ->
+              <<>>;
+            <<"application/json">> ->
+              <<>>
+          end,
+        {ReqHeader2, EncodedBody};
+      error ->
+        {ReqHeader1, <<>>}
+    end,
   ReqOptions = maps:get(request_options, Options, #{}),
   Req = #{method => @@function.http_verb@@,
           header => ReqHeader,
