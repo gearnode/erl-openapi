@@ -57,7 +57,6 @@
 -type @@name@@_request_body() :: @@types.body@@.
 
 -type @@name@@_response() :: @@types.response@@.
-
 @@/functions@@
 
 
@@ -71,12 +70,12 @@
   Query = maps:get(query, Args, #{}),
   Header = maps:get(header, Args, #{}),
   @@#function.parameters.path@@
-  Var@@pascal_name@@ = get_path_parameter(@@snake_name@@, Args),
+  Var@@pascal_name@@ = get_path_parameter(@@real_name@@, Args),
   @@/function.parameters.path@@
   EncodeQuery =
     fun
       @@#function.parameters.query@@
-      ({@@snake_name@@, Value}) ->
+      ({@@real_name@@, Value}) ->
         encode_q(@@style@@, @@explode@@, <<"@@real_name@@">>, Value);
       @@/function.parameters.query@@
       ({Key, Value}) ->
@@ -85,7 +84,7 @@
   EncodeHeader =
     fun
       @@#function.parameters.header@@
-      ({@@snake_name@@, Value}) ->
+      ({@@real_name@@, Value}) ->
         encode_h(@@style@@, @@explode@@, <<"@@real_name@@">>, Value);
       @@/function.parameters.header@@
       ({Key, Value}) ->

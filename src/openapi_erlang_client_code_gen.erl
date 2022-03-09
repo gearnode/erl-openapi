@@ -120,7 +120,6 @@ generate_client_functions(Paths, PackageName, Options) ->
 
               RequestBody = openapi_operation:request_body(OperationObject),
 
-
               TReqBody =
                 lists:join(
                   " | ",
@@ -204,7 +203,6 @@ generate_client_functions(Paths, PackageName, Options) ->
               BuildParameter =
                 fun (#{name := PName} = ParameterObject) ->
                     #{pascal_name => openapi_code:pascal_case(PName),
-                      snake_name => openapi_code:snake_case(PName),
                       real_name => PName,
                       style => maps:get(style, ParameterObject, form),
                       explode => maps:get(explode, ParameterObject, false)}
