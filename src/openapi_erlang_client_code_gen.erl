@@ -393,12 +393,12 @@ schema_to_jsv(#{type := object} = Schema, Options) ->
     #{members =>
         maps:fold(fun (Key, Value, Acc) ->
                       Definition = schema_to_jsv(Value, Options),
-                      Name = binary_to_atom(openapi_code:snake_case(Key)),
+                      Name = binary_to_atom(Key),
                       Acc#{Name => Definition}
                   end, #{}, openapi_schema:properties(Schema)),
       required =>
         lists:map(fun (Key) ->
-                      binary_to_atom(openapi_code:snake_case(Key))
+                      binary_to_atom(Key)
                   end, openapi_schema:required(Schema))},
 
   %% Additionalproperties cannot currently be handle by JSV.
