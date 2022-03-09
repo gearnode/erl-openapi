@@ -68,11 +68,11 @@
 
 -spec @@name@@(@@name@@_request(), options()) -> result(@@name@@_response()).
 @@name@@(Args, Options) ->
-  @@#function.parameters.path@@
-  Var@@pascal_name@@ = maps:get(@@snake_name@@, Args),
-  @@/function.parameters.path@@
   Query = maps:get(query, Args, #{}),
   Header = maps:get(header, Args, #{}),
+  @@#function.parameters.path@@
+  Var@@pascal_name@@ = get_path_parameter(@@snake_name@@, Args),
+  @@/function.parameters.path@@
   EncodeQuery =
     fun
       @@#function.parameters.query@@
@@ -201,6 +201,12 @@
                 request => Req}}
   end.
 @@/functions@@
+
+-spec get_path_parameter(term(), map()) -> iodata().
+get_path_parameter(Key, Map) ->
+  Path = maps:get(path, Map, #{}),
+  Value = maps:get(Key, Path),
+  uri:encode_path(Value).
 
 -spec encode_q(Style, Explode, Key, Value) -> uri:query()
           when Style :: form | spaceDelimitde | pipeDelimited | deepObject,
