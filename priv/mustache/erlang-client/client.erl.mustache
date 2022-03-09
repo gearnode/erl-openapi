@@ -104,13 +104,23 @@
     end,
   {ReqHeader, ReqBody} =
     case maps:find(body, Args) of
-      {ok, {BodyContentType, _BodyData}} ->
-        ReqHeader2 =
-          mhttp_header:append({<<"Content-Type">>, BodyContentType}),
+      {ok, {BodyContentType, BodyData}} ->
+        CT = {<<"Content-Type">>, BodyContentType},
+        ReqHeader2 = mhttp_header:append(ReqHeader1, [CT]),
         EncodedBody =
           case BodyContentType of
             <<"application/x-www-form-urlencoded">> ->
-              <<>>;
+              EncodeBody =
+                fun
+                  @@#function.request.encoding@@
+                  ({@@real_name@@, Value}) ->
+                    encode_q(@@style@@, @@explode@@, <<"@@real_name@@">>, Value);
+                  @@/function.request.encoding@@
+                  ({Key, Value}) ->
+                    encode_q(form, false, Key, Value)
+                end,
+              QueryBody = lists:flatmap(EncodeBody, maps:to_list(BodyData)),
+              uri:encode_query(QueryBody);
             <<"application/json">> ->
               <<>>
           end,

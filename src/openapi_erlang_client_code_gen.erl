@@ -119,6 +119,27 @@ generate_client_functions(Paths, PackageName, Options) ->
               Responses = openapi_operation:responses(OperationObject),
 
               RequestBody = openapi_operation:request_body(OperationObject),
+              RequestBodyContent = openapi_request_body:contents(RequestBody),
+
+              BodyEncoding =
+                case
+                  lists:keyfind(<<"application/x-www-form-urlencoded">>,
+                                1,
+                                RequestBodyContent)
+                of
+                  {_, MediaTypeObject} ->
+                    Encoding = openapi_media_type:encoding(MediaTypeObject),
+
+
+                    maps:fold(
+                      fun (K, V, Acc6) ->
+                          [#{real_name => K,
+                             style => openapi_encoding:style(V),
+                             explode => openapi_encoding:explode(V)} | Acc6]
+                      end, [], Encoding);
+                  false ->
+                    []
+                end,
 
               TReqBody =
                 lists:join(
@@ -207,6 +228,7 @@ generate_client_functions(Paths, PackageName, Options) ->
                       style => maps:get(style, ParameterObject, form),
                       explode => maps:get(explode, ParameterObject, false)}
                 end,
+
               Binary = fun unicode:characters_to_binary/1,
 
               State =
@@ -223,6 +245,8 @@ generate_client_functions(Paths, PackageName, Options) ->
                                     fun (Name) ->
                                         ["Var", openapi_code:pascal_case(Name)]
                                     end, VariablesNames)), "]"]),
+                      request =>
+                        #{encoding => BodyEncoding},
                       parameters =>
                         #{query => lists:map(BuildParameter, QueryParameters),
                           path => lists:map(BuildParameter, PathParameters),
