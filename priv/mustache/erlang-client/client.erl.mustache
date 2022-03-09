@@ -119,7 +119,7 @@
                   ({Key, Value}) when is_atom(Key) ->
                     encode_q(form, false, atom_to_binary(Key), Value);
                   ({Key, Value}) ->
-                    encode_q(form, false, Key, Value);
+                    encode_q(form, false, Key, Value)
                 end,
               QueryBody = lists:flatmap(EncodeBody, maps:to_list(BodyData)),
               uri:encode_query(QueryBody);
