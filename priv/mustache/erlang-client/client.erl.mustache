@@ -237,7 +237,7 @@ get_path_parameter(Key, Map) ->
 -spec encode_q(Style, Explode, Key, Value) -> uri:query()
           when Style :: form | spaceDelimitde | pipeDelimited | deepObject,
                Explode :: boolean(),
-               Key :: binary(),
+               Key :: atom() | binary(),
                Value :: term().
 encode_q(form, true, Key, Value) when is_binary(Value) ->
   [{Key, Value}];
@@ -291,37 +291,18 @@ encode_q(form, false, Key, Values) when is_map(Values) ->
       end, [], Values),
   [{Key, unicode:characters_to_binary(lists:join(",", Values1))}];
 
-%% deepObject MUST not encode primary or array value but Stripe use this style
-%% to encode query parameter. So I'm force to extend the spec.
-encode_q(deepObject, true, Key, Value) when is_binary(Value) ->
-  [{Key, Value}];
-encode_q(deepObject, true, Key, Value) when is_integer(Value) ->
-  [{Key, integer_to_binary(Value)}];
-encode_q(deepObject, true, Key, Value) when is_atom(Value) ->
-  [{Key, atom_to_binary(Value)}];
-encode_q(deepObject, true, Key, Values) when is_list(Values) ->
-  lists:map(
-    fun
-      (Value) when is_binary(Value)->
-        {<<Key/binary, "[]">>, Value};
-      (Value) when is_integer(Value) ->
-        {<<Key/binary, "[]">>, integer_to_binary(Value)};
-      (Value) when is_atom(Value) ->
-        {<<Key/binary, "[]">>, atom_to_binary(Value)}
-    end, Values);
-encode_q(deepObject, true, Key, Values) when is_map(Values) ->
-  maps:fold(
-    fun
-      (K, V, Acc) when is_binary(V) ->
-        K2 = atom_to_binary(K),
-        [{<<Key/binary, $[, K2/binary, $]>>, V} | Acc];
-      (K, V, Acc) when is_integer(V) ->
-        K2 = atom_to_binary(K),
-        [{<<Key/binary, $[, K2/binary, $]>>, integer_to_binary(V)} | Acc];
-      (K, V, Acc) when is_atom(V) ->
-        K2 = atom_to_binary(K),
-        [{<<Key/binary, $[, K2/binary, $]>>, atom_to_binary(V)} | Acc]
-    end, [], Values).
+encode_q(deepObject, true, Key, Values) ->
+  Flattened = flatten_deep_object(#{Key => Values}),
+  maps:fold(fun
+              (K, V, Acc) when is_atom(V) ->
+                [{K, atom_to_binary(V)} | Acc];
+              (K, V, Acc) when is_integer(V) ->
+                [{K, integer_to_binary(V)} | Acc];
+              (K, V, Acc) when is_float(V) ->
+                [{K, float_to_binary(V)} | Acc];
+              (K, V, Acc) when is_binary(V) ->
+                [{K, V} | Acc]
+            end, [], Flattened).
 
 -spec encode_h(Style, Explode, Key, Value) -> mhttp:header()
           when Style :: simple,
@@ -391,3 +372,52 @@ encode_h(simple, true, Key, Values) when is_map(Values) ->
             (K, V, Acc) when is_atom(V) ->
               [[K, $=, atom_to_binary(V)] | Acc]
           end, [], Values)))}].
+
+-spec binary(unicode:chardata()) -> binary().
+binary(Data) ->
+  case unicode:characters_to_binary(Data) of
+    Bin when is_binary(Bin) ->
+      Bin;
+    _ ->
+      error({invalid_character_data, Data})
+  end.
+
+-spec format(io:format(), [term()]) -> binary().
+format(Format, Args) ->
+  binary(io_lib:format(Format, Args)).
+
+-spec flatten_deep_object(#{binary() | atom() := term()} | list()) ->
+        #{binary() := term()}.
+flatten_deep_object(Value) ->
+  flatten_deep_object(Value, <<"">>, #{}).
+
+-spec flatten_deep_object(#{binary() | atom() := term()} | list(),
+                          binary(), #{binary() := term()}) ->
+        #{binary() := term()}.
+flatten_deep_object(Value, Prefix, Acc) when is_map(Value) ->
+  maps:fold(fun (K, V, Acc2) ->
+                Prefix2 =
+                  case Prefix of
+                    <<"">> ->
+                      K;
+                    _ ->
+                      format("~ts[~ts]", [Prefix, K])
+                  end,
+                if
+                  is_map(V); is_list(V) ->
+                    flatten_deep_object(V, Prefix2, Acc2);
+                  true ->
+                    Acc2#{Prefix2 => V}
+                end
+            end, Acc, Value);
+flatten_deep_object(Value, Prefix, Acc) when is_list(Value) ->
+  Indices = lists:seq(0, length(Value)-1),
+  lists:foldl(fun ({I,E}, Acc2) ->
+                  Prefix2 = format("~ts[~b]", [Prefix, I]),
+                  if
+                    is_map(E); is_list(E) ->
+                      flatten_deep_object(E, Prefix2, Acc2);
+                    true ->
+                      Acc2#{Prefix2 => E}
+                  end
+              end, Acc, lists:zip(Indices, Value)).
