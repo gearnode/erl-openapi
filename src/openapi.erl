@@ -329,9 +329,9 @@ servers(#{servers := Servers}) ->
 servers(_) ->
   [].
 
--spec paths(specification()) -> #{binary() := path()}.
+-spec paths(specification()) -> {binary(), path()}.
 paths(#{paths := Paths}) ->
-  Paths.
+  maps:to_list(Paths).
 
 -spec components(specification()) -> #{} | components().
 components(#{components := Components}) ->

@@ -98,8 +98,8 @@ generate_client_file(Datetime, PackageName, Spec, Options) ->
   openapi_mustache:render(<<"erlang-client/client.erl">>, Data, #{disable_html_escaping => true}).
 
 generate_client_functions(Paths, PackageName, Options) ->
-  maps:fold(
-    fun (Path, PathItemObject, Acc) ->
+  lists:flatmap(
+    fun ({Path, PathItemObject}) ->
         {PathFormat, VariablesNames} = openapi_path_template:parse(Path),
         %% TODO manage global parametgers not needed for stripe
         %% io:format("XXX ~p~n", [maps:get(parameters, PathItemObject, [])]),
@@ -302,8 +302,8 @@ generate_client_functions(Paths, PackageName, Options) ->
                             end, [], maps:with([<<"default">>], Responses))},
 
               State2
-          end, PathOperations) ++ Acc
-    end, [], Paths).
+          end, PathOperations)
+    end, Paths).
 
 
 generate_jsv_file(Now, PackageName, Spec, Options) ->
