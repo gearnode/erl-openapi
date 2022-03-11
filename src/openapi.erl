@@ -44,6 +44,7 @@
               example/0,
               links/0,
               tag/0,
+              header/0,
               schema/0,
               discriminator/0,
               xml/0,
